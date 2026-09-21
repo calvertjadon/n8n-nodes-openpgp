@@ -1,52 +1,17 @@
-# TEMPORARY: OIDC trusted-publisher round-trip verification (bootstrap
-# ticket #8). Publishes inert n8n-nodes-openpgp@0.0.1 from GitHub Actions via
-# OIDC to prove the binding works end-to-end with provenance BEFORE the real
-# release pipeline depends on it. Version is deprecated after verification.
+# Placeholder so the npm Trusted Publisher can bind to this filename
+# (bootstrap ticket #8). The binding records the workflow filename and is
+# immutable once created — #7 locked it to release.yml.
 #
-# Reverts to the inert placeholder stub immediately after the test.
-# The real pipeline (CI → release-it → OIDC publish) lands with the build plan.
+# The full release pipeline (CI → release-it → OIDC provenance publish) is
+# specified by the map's build-plan ticket and lands in a later change.
+# Until then this workflow is inert: manual dispatch only, echo-only job.
 name: Release
 
 on:
   workflow_dispatch:
 
-permissions:
-  id-token: write # Required for OIDC trusted publishing
-  contents: read
-
 jobs:
-  oidc-roundtrip:
+  placeholder:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false # never use caching in release builds
-      - name: Build inert test package
-        run: |
-          mkdir -p test-package
-          cd test-package
-          cat > package.json <<'EOF'
-          {
-            "name": "n8n-nodes-openpgp",
-            "version": "0.0.1",
-            "description": "OIDC round-trip verification publish — inert placeholder, will be deprecated.",
-            "license": "MIT",
-            "repository": {
-              "type": "git",
-              "url": "git+https://github.com/calvertjadon/n8n-nodes-openpgp.git"
-            },
-            "files": ["README.md"]
-          }
-          EOF
-          cat > README.md <<'EOF'
-          # n8n-nodes-openpgp
-
-          OIDC round-trip verification publish (0.0.1) — inert, deprecated.
-          See https://github.com/calvertjadon/n8n-nodes-openpgp
-          EOF
-      - name: Publish via OIDC trusted publisher
-        working-directory: test-package
-        run: npm publish
+      - run: echo "Placeholder — real pipeline lands with the build plan."
