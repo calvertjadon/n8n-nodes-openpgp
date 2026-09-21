@@ -1,0 +1,17 @@
+# Placeholder so the npm Trusted Publisher can bind to this filename
+# (bootstrap ticket #8). The binding records the workflow filename and is
+# immutable once created — #7 locked it to release.yml.
+#
+# The full release pipeline (CI → release-it → OIDC provenance publish) is
+# specified by the map's build-plan ticket and lands in a later change.
+# Until then this workflow is inert: manual dispatch only, echo-only job.
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Placeholder — real pipeline lands with the build plan."
