@@ -1,0 +1,53 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":semanticPrefixFixDepsChoreOthers",
+		":enableVulnerabilityAlerts",
+		"security:minimumReleaseAgeNpm",
+		":automergeAll"
+	],
+	"rangeStrategy": "pin",
+	"platformAutomerge": true,
+	"labels": ["dependencies"],
+	"packageRules": [
+		{
+			"description": "Keep dependency bumps as patch releases, so a green openpgp major never jumps our minor version",
+			"matchPackageNames": ["openpgp"],
+			"semanticCommitType": "fix"
+		},
+		{
+			"description": "Group non-major devDependency bumps into one pull request",
+			"matchDepTypes": ["devDependencies"],
+			"matchUpdateTypes": ["minor", "patch"],
+			"groupName": "devDependencies (non-major)"
+		},
+		{
+			"description": "openpgp majors are hands-off too, but they must be visible in the label set",
+			"matchPackageNames": ["openpgp"],
+			"matchUpdateTypes": ["major"],
+			"addLabels": ["openpgp-major"]
+		},
+		{
+			"description": "Docker and GitHub Actions bumps never cut a release",
+			"matchManagers": ["dockerfile", "custom.regex", "github-actions"],
+			"commitMessagePrefix": "ci(deps):",
+			"semanticCommitType": "ci"
+		}
+	],
+	"vulnerabilityAlerts": {
+		"description": "The default (update-lockfile) would fix only the lockfile",
+		"rangeStrategy": "pin",
+		"labels": ["security"]
+	},
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "Pin the n8n image the smoke lane runs against",
+			"fileMatch": ["^test/smoke/run\\.sh$"],
+			"matchStrings": [
+				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nN8N_IMAGE=\\$\\{N8N_IMAGE:-[^:]+:(?<currentValue>[^}]+)\\}"
+			]
+		}
+	]
+}

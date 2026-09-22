@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Cancel superseded runs on the same branch or pull request.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    name: fast (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '26']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # commitlint needs the pull request range, not just the tip.
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint commit messages
+        if: github.event_name == 'pull_request'
+        run: >-
+          npx commitlint
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+          --verbose
+
+      # eslint.config.mjs stays identical to the scaffold's (n8n.strict), so the
+      # single Cloud-conformance rule this package cannot satisfy by design is
+      # turned off explicitly: openpgp is a runtime dependency, which is why the
+      # package ships unverified (spec §6, ticket #11). Everything else in the
+      # community ruleset still gates the lane.
+      - name: Lint
+        run: npm run lint:ci
+
+      - name: Build
+        run: npm run build
+
+      # The unit and GnuPG interop layers; gpg is preinstalled on the runner.
+      - name: Test
+        run: npm test
+
+  smoke-stable:
+    name: smoke (n8n stable)
+    runs-on: ubuntu-latest
+    env:
+      N8N_IMAGE: n8nio/n8n:2.39.10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke test in a real n8n container
+        run: npm run smoke
+
+  smoke-v3:
+    name: smoke (n8n v3 nightly, non-blocking)
+    runs-on: ubuntu-latest
+    # Watches the Oct 2026 cliff: n8n 3.0 flips N8N_UNVERIFIED_PACKAGES_ENABLED
+    # to false. Promote to a second pinned blocking lane once 3.0 ships.
+    continue-on-error: true
+    env:
+      N8N_IMAGE: n8nio/n8n:v3-nightly
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke test against the v3 nightly
+        run: npm run smoke

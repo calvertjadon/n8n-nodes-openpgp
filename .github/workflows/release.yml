@@ -1,17 +1,71 @@
-# Placeholder so the npm Trusted Publisher can bind to this filename
-# (bootstrap ticket #8). The binding records the workflow filename and is
-# immutable once created — #7 locked it to release.yml.
-#
-# The full release pipeline (CI → release-it → OIDC provenance publish) is
-# specified by the map's build-plan ticket and lands in a later change.
-# Until then this workflow is inert: manual dispatch only, echo-only job.
 name: Release
 
+# Single atomic run: gate on the full CI, then bump, tag, create the GitHub
+# Release and publish to npm with OIDC provenance. GITHUB_TOKEN-pushed tags do
+# not trigger other workflows, which is why this is one workflow and not two.
+#
+# The workflow filename is bound to the npm Trusted Publisher and is immutable:
+# changing it means deleting and recreating the publisher.
+#
+# Partial-failure repair: re-run with `npx release-it --no-increment` locally
+# after fixing the cause (the tag and version bump already happened).
+
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  placeholder:
+  release:
     runs-on: ubuntu-latest
+    env:
+      # prepublishOnly (`n8n-node prerelease`) rejects any publish without this.
+      RELEASE_MODE: 'true'
     steps:
-      - run: echo "Placeholder — real pipeline lands with the build plan."
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # Trusted publishing needs npm >= 11.5.1 on Node >= 22.14.0.
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # Bumps, commits, tags, pushes, creates the GitHub Release and publishes
+      # with provenance. A merge with nothing releasable publishes nothing.
+      - name: Release
+        run: npx release-it --ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Post-publish tripwire: the scanner reads published artifacts, so it can
+      # detect a bad publish within minutes but cannot prevent one.
+      - name: Scan published package
+        run: >-
+          npx --yes @n8n/scan-community-package
+          "n8n-nodes-openpgp@$(node -p "require('./package.json').version")"

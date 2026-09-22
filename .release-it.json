@@ -1,0 +1,23 @@
+{
+	"git": {
+		"requireCleanWorkingDir": false
+	},
+	"npm": {
+		"skipChecks": true
+	},
+	"github": {
+		"release": true
+	},
+	"plugins": {
+		"@release-it/conventional-changelog": {
+			"preset": {
+				"name": "conventionalcommits",
+				"releaseRules": [
+					{ "type": "chore", "scope": "deps", "release": "patch" },
+					{ "type": "ci", "release": false }
+				]
+			},
+			"infile": "CHANGELOG.md"
+		}
+	}
+}
