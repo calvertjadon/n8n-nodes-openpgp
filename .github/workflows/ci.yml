@@ -31,8 +31,11 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
+      # --ignore-scripts skips native builds of the dev-only toolchain
+      # (n8n-workflow pulls isolated-vm, which fails to compile on new Node
+      # majors and costs minutes); nothing the suite runs needs them.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Lint commit messages
         if: github.event_name == 'pull_request'
@@ -70,8 +73,11 @@ jobs:
           node-version: '24'
           cache: npm
 
+      # --ignore-scripts skips native builds of the dev-only toolchain
+      # (n8n-workflow pulls isolated-vm, which fails to compile on new Node
+      # majors and costs minutes); nothing the suite runs needs them.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Smoke test in a real n8n container
         run: npm run smoke
@@ -93,8 +99,11 @@ jobs:
           node-version: '24'
           cache: npm
 
+      # --ignore-scripts skips native builds of the dev-only toolchain
+      # (n8n-workflow pulls isolated-vm, which fails to compile on new Node
+      # majors and costs minutes); nothing the suite runs needs them.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Smoke test against the v3 nightly
         run: npm run smoke

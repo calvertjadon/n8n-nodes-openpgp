@@ -116,8 +116,10 @@ gpg_silent --armor --output "$FIXTURES/signatures/stranger-detached.asc" --local
 
 # --- smoke-lane fixtures ------------------------------------------------------
 # Credentials and workflows for the container smoke lane. The workflows carry the
-# public keys inline, so they are regenerated with the key material. Paths point
-# at /work, where test/smoke/run.sh mounts the repository inside the container.
+# public keys inline, so they are regenerated with the key material. Inputs are
+# read from /work, where test/smoke/run.sh mounts the repository, and results are
+# written inside the container (its own file area is always writable) for the
+# harness to copy out.
 python3 - "$FIXTURES" <<'PY'
 import json
 import pathlib
@@ -271,7 +273,7 @@ workflows = {
 				},
 				CREDENTIAL,
 			),
-			write_file('write-result', '/work/.smoke-out/key-round-trip.bin'),
+			write_file('write-result', '/home/node/.n8n-files/smoke/key-round-trip.bin'),
 		],
 	),
 	'password-round-trip': workflow(
@@ -302,7 +304,7 @@ workflows = {
 					'outputAs': 'binary',
 				},
 			),
-			write_file('write-result', '/work/.smoke-out/password-round-trip.bin'),
+			write_file('write-result', '/home/node/.n8n-files/smoke/password-round-trip.bin'),
 		],
 	),
 	'sign-verify': workflow(
@@ -415,7 +417,7 @@ workflows = {
 				},
 				CREDENTIAL,
 			),
-			write_file('write-result', '/work/.smoke-out/gpg-decrypt.bin'),
+			write_file('write-result', '/home/node/.n8n-files/smoke/gpg-decrypt.bin'),
 		],
 	),
 	'gpg-verify': workflow(

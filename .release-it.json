@@ -1,6 +1,7 @@
 {
 	"git": {
-		"requireCleanWorkingDir": false
+		"requireCleanWorkingDir": false,
+		"commitMessage": "chore(release): ${version}"
 	},
 	"npm": {
 		"skipChecks": true
@@ -13,8 +14,15 @@
 			"preset": {
 				"name": "conventionalcommits",
 				"releaseRules": [
-					{ "type": "chore", "scope": "deps", "release": "patch" },
-					{ "type": "ci", "release": false }
+					{
+						"type": "chore",
+						"scope": "deps",
+						"release": "patch"
+					},
+					{
+						"type": "ci",
+						"release": false
+					}
 				]
 			},
 			"infile": "CHANGELOG.md"

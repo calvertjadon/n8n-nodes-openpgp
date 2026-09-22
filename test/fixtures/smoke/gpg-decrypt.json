@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "fileName": "/work/.smoke-out/gpg-decrypt.bin",
+        "fileName": "/home/node/.n8n-files/smoke/gpg-decrypt.bin",
         "dataPropertyName": "data",
         "options": {}
       },

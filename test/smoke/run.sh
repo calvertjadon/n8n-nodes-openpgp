@@ -46,7 +46,7 @@ docker run -d --name "$CONTAINER" \
 	-e N8N_UNVERIFIED_PACKAGES_ENABLED=true \
 	-e N8N_DIAGNOSTICS_ENABLED=false \
 	-e N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES=false \
-	-e N8N_RESTRICT_FILE_ACCESS_TO=$MOUNT \
+	-e N8N_RESTRICT_FILE_ACCESS_TO="$MOUNT;/home/node/.n8n-files" \
 	"$N8N_IMAGE" infinity >/dev/null
 
 for _ in $(seq 1 30); do
@@ -83,6 +83,9 @@ node -e '
 ' "$target/package.json"
 cd "$target"
 npm install --audit=false --fund=false --bin-links=false --install-strategy=shallow --ignore-scripts=true --package-lock=false
+# Workflows write their results here: the mounted checkout belongs to the runner
+# user, which the container's node user cannot write to.
+mkdir -p /home/node/.n8n-files/smoke
 INSTALL
 
 log "Importing credentials and workflows"
@@ -94,13 +97,17 @@ for workflow in "$REPO_ROOT"/test/fixtures/smoke/*.json; do
 	docker exec "$CONTAINER" n8n import:workflow --input "$MOUNT/test/fixtures/smoke/$(basename "$workflow")" >/dev/null
 done
 
-# Executes one workflow and hands its raw output to the assertion script.
+# Executes one workflow, copies any written result out of the container and hands
+# the raw output to the assertion script.
 run_workflow() {
 	local id=$1 expectation=$2 output_name=$3
 	local output status
 	set +e
 	output=$(docker exec "$CONTAINER" n8n execute --id "$id" --raw-output 2>&1)
 	status=$?
+	if [ "$output_name" != '-' ]; then
+		docker cp "$CONTAINER:/home/node/.n8n-files/smoke/$output_name" "$REPO_ROOT/.smoke-out/$output_name" >/dev/null 2>&1 || true
+	fi
 	set -e
 	printf '%s' "$output" | python3 "$REPO_ROOT/test/smoke/assert.py" "$expectation" "$output_name" "$status"
 }
