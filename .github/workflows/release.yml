@@ -88,6 +88,12 @@ jobs:
             npm version "$last_tag" --no-git-tag-version --allow-same-version >/dev/null
           fi
 
+          # The released tag has to point at a commit on `main` (this run's head),
+          # not at release-it's local bump commit, which never lands there. A tag
+          # off the trunk is invisible to `git describe`, which the next release
+          # uses to derive its base version.
+          trunk=$(git rev-parse HEAD)
+
           before=$(node -p "require('./package.json').version")
           # release-it bumps, writes the changelog, commits and tags; the publish
           # is run here instead so its output is visible when it goes wrong.
@@ -123,5 +129,6 @@ jobs:
           # personally-owned repository, and a pull request opened with
           # GITHUB_TOKEN needs a human to approve its run — so every release
           # re-derives its base version from the last tag instead (see §12).
-          git push origin "refs/tags/${version}"
+          git tag --force "${version}" "$trunk"
+          git push --force origin "refs/tags/${version}"
           gh release create "${version}" --title "${version}" --notes-file /tmp/release-notes.md
