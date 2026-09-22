@@ -64,6 +64,33 @@ function countOf(names: string[], name: string): number {
 	return names.filter((candidate) => candidate === name).length;
 }
 
+describe('credential visibility', () => {
+	const [credential] = description.credentials ?? [];
+
+	/** Whether the credential row is offered, as the editor decides it. */
+	function credentialVisible(values: INodeParameters): boolean {
+		return NodeHelpers.displayParameter(
+			values,
+			credential as unknown as INodeParameters,
+			node,
+			description,
+		);
+	}
+
+	it('offers the private key credential wherever an operation can use it', () => {
+		expect(credentialVisible({ operation: 'sign' })).toBe(true);
+		expect(credentialVisible({ operation: 'encrypt', encryptUsing: 'publicKeys' })).toBe(true);
+		expect(credentialVisible({ operation: 'decrypt', decryptUsing: 'privateKey' })).toBe(true);
+	});
+
+	it('hides it where it cannot be used: Verify, and password-mode decryption', () => {
+		// Verify works from public keys alone, so a private-key row there reads as a
+		// requirement that does not exist; password-mode decryption never touches it.
+		expect(credentialVisible({ operation: 'verify' })).toBe(false);
+		expect(credentialVisible({ operation: 'decrypt', decryptUsing: 'password' })).toBe(false);
+	});
+});
+
 describe('Sign parameters', () => {
 	it('shows the cleartext fields and hides the source/output discriminators', () => {
 		const names = visibleParameters({ signatureType: 'cleartext' }, 'sign');
@@ -130,13 +157,26 @@ describe('Verify parameters', () => {
 			'Operation',
 			'Signature Type',
 			'Message Source',
-			'Input Binary Field',
+			'Message Binary Field',
 			'Signature Source',
 			'Signature Text',
 			'Public Key(s)',
 			'Throw on Invalid Signature',
 			'Options',
 		]);
+	});
+
+	it('labels the message and the signature binary fields apart', () => {
+		// Both used to read "Input Binary Field" with the same default, which left
+		// the grey hint as the only way to tell them apart.
+		const names = visibleParameters(
+			{ signatureType: 'detached', messageSource: 'binary', signatureSource: 'binary' },
+			'verify',
+		);
+
+		expect(names).toContain('Message Binary Field');
+		expect(names).toContain('Signature Binary Field');
+		expect(countOf(names, 'Input Binary Field')).toBe(0);
 	});
 
 	it('shows one message field per source for an embedded signature', () => {
@@ -147,7 +187,7 @@ describe('Verify parameters', () => {
 			'Operation',
 			'Signature Type',
 			'Source Data',
-			'Input Binary Field',
+			'Message Binary Field',
 			'Public Key(s)',
 			'Throw on Invalid Signature',
 			'Options',

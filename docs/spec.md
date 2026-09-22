@@ -51,7 +51,7 @@ Repo hygiene at scaffold time (Step 0): delete the research residue `n8n.json` (
 
 ## 2. Public interface: credential `OpenPgpPrivateKey`
 
-Declared **`required: false`** on the node, with a per-action runtime check (Encrypt when *Also Sign* is on, Decrypt in Private Key mode, Sign always; Verify never).
+Declared **`required: false`** on the node, with a per-action runtime check (Encrypt when *Also Sign* is on, Decrypt in Private Key mode, Sign always; Verify never). The row itself is hidden where it cannot be used — on Verify, and in password-mode decryption — through `displayOptions.hide` on the credential declaration, so the editor does not ask for a private key where none is read.
 
 | Field | Display name | Type | Notes |
 |---|---|---|---|
@@ -132,9 +132,9 @@ Credential always required.
 |---|---|---|
 | `signatureType` | Signature Type | Detached \| Embedded, default Detached |
 | `messageSource` | Message Source | Text \| Binary, default Binary — Detached |
-| `messageText` / `messageBinaryPropertyName` | Message Text / Input Binary Field | per mode — Detached |
+| `messageText` / `messageBinaryPropertyName` | Message Text / Message Binary Field | per mode — Detached |
 | `signatureSource` | Signature Source | Text \| Binary, default **Text** — Detached |
-| `signatureText` / `signatureBinaryPropertyName` | Signature Text / Input Binary Field | per mode — Detached |
+| `signatureText` / `signatureBinaryPropertyName` | Signature Text / Signature Binary Field | per mode — Detached |
 | `sourceData` | Source Data | Text \| Binary, default Binary — Embedded (covers cleartext + inline through one `verify()` call) |
 | `publicKeys` | Public Key(s) | textarea, required |
 | `throwOnInvalidSignature` | Throw on Invalid Signature | boolean, default **true** — real failure semantics is the package's reason to exist; uncheck (or On Error outputs) for predicate-style branching |
@@ -469,3 +469,20 @@ does not rediscover them:
   CRC glued to the data all parse. Re-anchoring skips markers that sit behind a `- ` or `> ` prefix so the
   dash-escape/quoting diagnosis still fires, and a glued `=XXXX` CRC is split back onto its own line so line-numbered
   diagnosis stays honest.
+- **The editor shows `hint` under the field and `description` only on hover, and never shows a boolean's hint**:
+  walking the built editor (n8n 2.40) settled where copy has to live. `hint` renders as the grey line beneath a
+  text/select input, `description` renders as the tooltip on the label's info icon, and a boolean renders no hint at
+  all — so *Also Sign* and *Require Valid Signature* carry their caveats in `description`, while *Public Key(s)*
+  states its purpose — the Decrypt copy says it is optional and what leaving it empty does — in `hint`.
+- **The credential row is hidden where it cannot be used**: `INodeCredentialDescription` accepts `displayOptions`
+  (evaluated by the same `displayParameter` the editor uses), so Verify and password-mode decryption no longer show a
+  private-key field that suggests a requirement. Encrypt keeps the row in both modes because its need depends on
+  *Also Sign* in password mode, which `hide` (OR across keys) cannot express.
+- **Verify's duplicate binary labels were split**: `messageBinaryPropertyName` and `signatureBinaryPropertyName` both
+  read *Input Binary Field* with the same `data` default, leaving the grey hint as the only difference —
+  the issue-#10 naming nit. They are *Message Binary Field* and *Signature Binary Field* now, mirroring the *Message
+  Text* / *Signature Text* pair; the parameter names are unchanged, so saved workflows are unaffected.
+- **Jargon got help text**: Sign's *Detached / Cleartext / Inline* and Verify's *Detached / Embedded* carry per-option
+  descriptions, which the editor renders inside the dropdown next to each option — the same mechanism the Operation
+  field already relies on. The credential's own *Private Key* and *Passphrase* fields gained hints after a user
+  reported pasting a key that the node could not read, which left the paste instructions reachable only by hover.

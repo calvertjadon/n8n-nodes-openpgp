@@ -21,6 +21,7 @@ export class OpenPgpPrivateKeyApi implements ICredentialType {
 			default: '',
 			required: true,
 			placeholder: 'e.g. -----BEGIN PGP PRIVATE KEY BLOCK-----',
+			hint: 'Paste the whole block, BEGIN and END lines included — a binary key file must be exported as armored text first (gpg --armor --export-secret-keys)',
 			description:
 				'The armored private key used to decrypt and sign. Paste the complete block, including the BEGIN and END lines.',
 		},
@@ -33,6 +34,7 @@ export class OpenPgpPrivateKeyApi implements ICredentialType {
 			},
 			default: '',
 			placeholder: 'e.g. the passphrase of the private key',
+			hint: 'Leave empty when the key is not protected by a passphrase',
 			description:
 				'The passphrase that unlocks the private key. Leave empty when the key is not protected by one.',
 		},

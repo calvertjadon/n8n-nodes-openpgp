@@ -19,8 +19,8 @@ const OPERATIONS: Record<
 	(ctx: IExecuteFunctions, itemIndex: number) => Promise<INodeExecutionData>
 > = { decrypt, encrypt, sign, verify };
 
-const ARMORED_KEY_HINT =
-	'Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first';
+const ARMORED_KEY_HELP =
+	'Copy each key from its BEGIN line through its END line; binary key files must be exported as armored text first';
 
 const armorOutputOption = (description: string, displayOptions?: INodeProperties['displayOptions']): INodeProperties => ({
 	displayName: 'Armor Output',
@@ -98,6 +98,9 @@ export class OpenPgp implements INodeType {
 				name: 'openPgpPrivateKeyApi',
 				required: false,
 				testedBy: 'openPgpPrivateKeyTest',
+				// Verification needs public keys only, and password-mode decryption never
+				// touches the key, so the row would suggest a requirement that is not there.
+				displayOptions: { hide: { operation: ['verify'], decryptUsing: ['password'] } },
 			},
 		],
 		properties: [
@@ -177,8 +180,16 @@ export class OpenPgp implements INodeType {
 				description: 'How the data is encrypted: for one or more public keys, or with a shared password',
 				displayOptions: { show: { operation: ['encrypt'] } },
 				options: [
-					{ name: 'Public Keys', value: 'publicKeys' },
-					{ name: 'Password', value: 'password' },
+					{
+						name: 'Public Keys',
+						value: 'publicKeys',
+						description: 'Only holders of the matching private keys can decrypt the result',
+					},
+					{
+						name: 'Password',
+						value: 'password',
+						description: 'Anyone who knows the password can decrypt the result',
+					},
 				],
 			},
 			{
@@ -189,8 +200,8 @@ export class OpenPgp implements INodeType {
 				default: '',
 				required: true,
 				placeholder: 'e.g. -----BEGIN PGP PUBLIC KEY BLOCK-----',
-				hint: ARMORED_KEY_HINT,
-				description: 'One or more armored public keys to encrypt for, one recipient per key',
+				hint: 'One block per recipient — every key pasted here can decrypt the result',
+				description: `The armored public keys to encrypt for, one recipient per key. ${ARMORED_KEY_HELP}.`,
 				displayOptions: { show: { operation: ['encrypt'], encryptUsing: ['publicKeys'] } },
 			},
 			{
@@ -210,7 +221,7 @@ export class OpenPgp implements INodeType {
 				type: 'boolean',
 				default: false,
 				description:
-					"Whether to sign the message with the credential's private key as well. Works with both public keys and a password.",
+					"Whether to sign the message with the credential's private key as well, which needs an OpenPGP Private Key credential attached. Works with both public keys and a password.",
 				displayOptions: { show: { operation: ['encrypt'] } },
 			},
 			{
@@ -296,8 +307,16 @@ export class OpenPgp implements INodeType {
 				description: 'How the message is decrypted: with the credential private key, or with a shared password',
 				displayOptions: { show: { operation: ['decrypt'] } },
 				options: [
-					{ name: 'Private Key (Credential)', value: 'privateKey' },
-					{ name: 'Password', value: 'password' },
+					{
+						name: 'Private Key (Credential)',
+						value: 'privateKey',
+						description: 'Decrypt with the key held by the attached OpenPGP Private Key credential',
+					},
+					{
+						name: 'Password',
+						value: 'password',
+						description: 'Decrypt with the password the sender encrypted with',
+					},
 				],
 			},
 			{
@@ -318,8 +337,8 @@ export class OpenPgp implements INodeType {
 				typeOptions: { rows: 6 },
 				default: '',
 				placeholder: 'e.g. -----BEGIN PGP PUBLIC KEY BLOCK-----',
-				hint: ARMORED_KEY_HINT,
-				description: 'One or more armored public keys to verify the message signature with',
+				hint: 'Optional — checks a signature that travels with the message; leave empty to decrypt without checking who signed it',
+				description: `The armored public keys a signature travelling with the message is verified against. ${ARMORED_KEY_HELP}.`,
 				displayOptions: { show: { operation: ['decrypt'] } },
 			},
 			{
@@ -328,7 +347,7 @@ export class OpenPgp implements INodeType {
 				type: 'boolean',
 				default: false,
 				description:
-					'Whether to fail instead of returning data when the message is not signed by one of the provided Public Key(s)',
+					'Whether to fail instead of returning data when the message is not signed by one of the provided Public Key(s). Needs Public Key(s): without keys no message can be reported as signed.',
 				displayOptions: { show: { operation: ['decrypt'] } },
 			},
 			{
@@ -370,12 +389,24 @@ export class OpenPgp implements INodeType {
 				name: 'signatureType',
 				type: 'options',
 				default: 'detached',
-				description: 'The kind of signature to create: detached, cleartext or inline',
+				description: 'Whether the signature stands alone, wraps readable text, or travels inside the message',
 				displayOptions: { show: { operation: ['sign'] } },
 				options: [
-					{ name: 'Detached', value: 'detached' },
-					{ name: 'Cleartext', value: 'cleartext' },
-					{ name: 'Inline', value: 'inline' },
+					{
+						name: 'Detached',
+						value: 'detached',
+						description: 'Signature is written on its own, to send or store next to the original data',
+					},
+					{
+						name: 'Cleartext',
+						value: 'cleartext',
+						description: 'The text stays readable, with the signature wrapped around it',
+					},
+					{
+						name: 'Inline',
+						value: 'inline',
+						description: 'Signature and data travel together in one OpenPGP message',
+					},
 				],
 			},
 			{
@@ -487,8 +518,16 @@ export class OpenPgp implements INodeType {
 				description: 'Whether the signature travels separately from the message, or is embedded in it',
 				displayOptions: { show: { operation: ['verify'] } },
 				options: [
-					{ name: 'Detached', value: 'detached' },
-					{ name: 'Embedded', value: 'embedded' },
+					{
+						name: 'Detached',
+						value: 'detached',
+						description: 'The signature arrives in its own field or file, separate from the message',
+					},
+					{
+						name: 'Embedded',
+						value: 'embedded',
+						description: 'The message carries its own signature — a cleartext signature or a signed OpenPGP message',
+					},
 				],
 			},
 			{
@@ -516,14 +555,14 @@ export class OpenPgp implements INodeType {
 				},
 			},
 			{
-				displayName: 'Input Binary Field',
+				displayName: 'Message Binary Field',
 				name: 'messageBinaryPropertyName',
 				type: 'string',
 				default: 'data',
 				required: true,
 				placeholder: 'e.g. data',
-				hint: 'The name of the binary field holding the message the signature was created for',
-				description: 'The exact bytes of the message are verified, so use the unmodified file',
+				hint: 'The binary field holding the message the signature was created for',
+				description: 'The message bytes are verified exactly, so use the unmodified file',
 				displayOptions: {
 					show: { operation: ['verify'], signatureType: ['detached'], messageSource: ['binary'] },
 				},
@@ -553,7 +592,7 @@ export class OpenPgp implements INodeType {
 				},
 			},
 			{
-				displayName: 'Input Binary Field',
+				displayName: 'Signature Binary Field',
 				name: 'signatureBinaryPropertyName',
 				type: 'string',
 				default: 'data',
@@ -592,13 +631,13 @@ export class OpenPgp implements INodeType {
 				},
 			},
 			{
-				displayName: 'Input Binary Field',
+				displayName: 'Message Binary Field',
 				name: 'messageBinaryPropertyName',
 				type: 'string',
 				default: 'data',
 				required: true,
 				placeholder: 'e.g. data',
-				hint: 'The name of the binary field holding the signed message',
+				hint: 'The binary field holding the signed message',
 				description: 'Armored and binary signed messages are both accepted',
 				displayOptions: {
 					show: { operation: ['verify'], signatureType: ['embedded'], sourceData: ['binary'] },
@@ -612,8 +651,8 @@ export class OpenPgp implements INodeType {
 				default: '',
 				required: true,
 				placeholder: 'e.g. -----BEGIN PGP PUBLIC KEY BLOCK-----',
-				hint: ARMORED_KEY_HINT,
-				description: 'One or more armored public keys to verify the signature with',
+				hint: "The signer's public keys — the signature is verified against them",
+				description: `The armored public keys the signature is verified against. ${ARMORED_KEY_HELP}.`,
 				displayOptions: { show: { operation: ['verify'] } },
 			},
 			{
