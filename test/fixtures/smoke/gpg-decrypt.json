@@ -23,7 +23,7 @@
       "type": "n8n-nodes-base.readBinaryFile",
       "typeVersion": 1,
       "position": [
-        0,
+        220,
         0
       ]
     },
@@ -39,7 +39,7 @@
       "type": "n8n-nodes-openpgp.openPgp",
       "typeVersion": 1,
       "position": [
-        0,
+        440,
         0
       ],
       "credentials": {
@@ -60,7 +60,7 @@
       "type": "n8n-nodes-base.writeBinaryFile",
       "typeVersion": 1,
       "position": [
-        0,
+        660,
         0
       ]
     }

@@ -149,6 +149,14 @@ STRANGER_CREDENTIAL = {
 }
 
 
+def positioned(nodes):
+	# Every node is placed on its own column, so the committed workflows open as
+	# a readable graph in the editor instead of a stack at the origin.
+	for index, node in enumerate(nodes):
+		node['position'] = [index * 220, 0]
+	return nodes
+
+
 def merge_node(node_id, name='Merge'):
 	# Combine-by-position keeps both binary fields, so Verify sees the message
 	# and the signature on one item.
@@ -219,7 +227,7 @@ def chain(names):
 
 
 def workflow(workflow_id, name, nodes, connections=None):
-	nodes = [trigger()] + nodes
+	nodes = positioned([trigger()] + nodes)
 	names = [node['name'] for node in nodes]
 	return {
 		'id': workflow_id,

@@ -408,3 +408,9 @@ does not rediscover them:
   the same failure on the credential's field must name that field instead, so
   `Private Key doesn't contain a readable OpenPGP key — paste the full armored block, including
   BEGIN/END lines.` is used when the credential's key block is unreadable or holds no private key.
+- **Collection items address top-level params from the root**: a `displayOptions` entry inside a
+  collection option is evaluated against the collection's own values, so an option that depends
+  on a node-level parameter must name it with a leading slash (`'/outputAs': ['binary']`).
+  Without it the option is silently never offered. `test/parameters.test.ts` asserts the whole
+  §3.2–§3.5 table through n8n's own `displayParameter`/`displayParameterPath`, which is what the
+  editor uses.
