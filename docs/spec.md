@@ -450,3 +450,8 @@ does not rediscover them:
   its next version from the last tag — `package.json` and `CHANGELOG.md` on `main` lag until a human syncs them, while
   the changelog itself is in the GitHub Release. Verified end to end: `0.2.2` published with provenance and tagged
   from a `fix:` push with no human in the loop.
+- **A release tag must be anchored to the trunk commit.** release-it tags its own bump commit, which never reaches
+  `main` under the tag-only design, so `git describe` cannot see it and the *next* release re-derives a version that
+  already exists ("tag '0.2.2' already exists"). The workflow now creates the tag at the commit it ran on and force
+  pushes it, so every release leaves a reachable tag and the version chain stays monotonic. `package.json` and
+  `CHANGELOG.md` on `main` still lag (a human can sync them per release; the changelog is in the GitHub Release).
