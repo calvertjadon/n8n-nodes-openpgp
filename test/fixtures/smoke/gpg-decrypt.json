@@ -15,12 +15,14 @@
     },
     {
       "parameters": {
-        "filePath": "/work/test/fixtures/ciphertexts/rsa-armored.asc",
-        "dataPropertyName": "data"
+        "operation": "read",
+        "fileSelector": "/work/test/fixtures/ciphertexts/rsa-armored.asc",
+        "dataPropertyName": "data",
+        "options": {}
       },
       "id": "read-ciphertext",
       "name": "Read File",
-      "type": "n8n-nodes-base.readBinaryFile",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         220,
@@ -51,13 +53,14 @@
     },
     {
       "parameters": {
+        "operation": "write",
         "fileName": "/home/node/.n8n-files/smoke/gpg-decrypt.bin",
         "dataPropertyName": "data",
         "options": {}
       },
       "id": "write-result",
       "name": "Write File",
-      "type": "n8n-nodes-base.writeBinaryFile",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         660,

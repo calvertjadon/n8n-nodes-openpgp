@@ -174,21 +174,23 @@ def merge_node(node_id, name='Merge'):
 
 def write_file(node_id, path, name='Write File'):
 	return {
-		'parameters': {'fileName': path, 'dataPropertyName': 'data', 'options': {}},
+		'parameters': {'operation': 'write', 'fileName': path, 'dataPropertyName': 'data', 'options': {}},
 		'id': node_id,
 		'name': name,
-		'type': 'n8n-nodes-base.writeBinaryFile',
+		'type': 'n8n-nodes-base.readWriteFile',
 		'typeVersion': 1,
 		'position': [0, 0],
 	}
 
 
+# `readWriteFile` is the built-in that exists on every n8n this lane runs
+# against; `readBinaryFile`/`writeBinaryFile` were removed in 2.40.
 def read_file(node_id, path, name='Read File'):
 	return {
-		'parameters': {'filePath': path, 'dataPropertyName': 'data'},
+		'parameters': {'operation': 'read', 'fileSelector': path, 'dataPropertyName': 'data', 'options': {}},
 		'id': node_id,
 		'name': name,
-		'type': 'n8n-nodes-base.readBinaryFile',
+		'type': 'n8n-nodes-base.readWriteFile',
 		'typeVersion': 1,
 		'position': [0, 0],
 	}
