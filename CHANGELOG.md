@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.1...0.2.2) (2026-09-22)
+
+### Bug Fixes
+
+* use the file node that exists on both n8n 2.39 and 2.40 ([b5765b0](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/b5765b09d01edf8ffcebf0c8634a44c4937553f2)), references [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13)
+
 ## [0.2.1](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.0...0.2.1) (2026-09-22)
 
 ### Bug Fixes
