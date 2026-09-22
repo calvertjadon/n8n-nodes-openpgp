@@ -1,0 +1,77 @@
+{
+	"name": "n8n-nodes-openpgp",
+	"version": "0.1.0",
+	"description": "Encrypt, decrypt, sign, and verify data with OpenPGP \u2014 key-based or password-based.",
+	"license": "MIT",
+	"homepage": "https://github.com/calvertjadon/n8n-nodes-openpgp#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"openpgp",
+		"pgp",
+		"gpg",
+		"encryption",
+		"signature"
+	],
+	"author": {
+		"name": "Jadon Calvert",
+		"email": "calvertjadon@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/calvertjadon/n8n-nodes-openpgp.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:ci": "eslint . --rule '{\"@n8n/community-nodes/no-runtime-dependencies\": \"off\"}'",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run",
+		"smoke": "bash test/smoke/run.sh",
+		"commitlint": "commitlint",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/OpenPgpPrivateKeyApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/OpenPgp/OpenPgp.node.js"
+		]
+	},
+	"engines": {
+		"node": ">=22.22.0"
+	},
+	"publishConfig": {
+		"provenance": true
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"dependencies": {
+		"openpgp": "6.3.1"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "21.2.3",
+		"@commitlint/config-conventional": "21.2.3",
+		"@n8n/node-cli": "0.48.6",
+		"@openpgp/web-stream-tools": "0.3.1",
+		"@release-it/conventional-changelog": "12.0.2",
+		"@types/node": "22.20.4",
+		"eslint": "9.32.0",
+		"n8n-workflow": "2.16.0",
+		"openpgp": "6.3.1",
+		"prettier": "3.6.2",
+		"release-it": "19.2.4",
+		"typescript": "5.9.2",
+		"vitest": "5.0.1"
+	}
+}
