@@ -41,7 +41,8 @@ def written_bytes(output_name: str) -> bytes:
 	return path.read_bytes()
 
 
-def expect_plaintext_round_trip(record: dict, output_name: str) -> None:
+def expect_plaintext_round_trip(record: dict, output_name: str, status: int) -> None:
+	assert status == 0, f"n8n exited with {status}"
 	item = node_items(record, "Decrypt")[0]
 	assert item["json"].get("fileName") == "plaintext.txt", (
 		f"file name was not recovered: {item['json'].get('fileName')!r}"
@@ -52,7 +53,8 @@ def expect_plaintext_round_trip(record: dict, output_name: str) -> None:
 	)
 
 
-def expect_verified_with_keyid(record: dict, output_name: str) -> None:
+def expect_verified_with_keyid(record: dict, output_name: str, status: int) -> None:
+	assert status == 0, f"n8n exited with {status}"
 	item = node_items(record, "Verify")[0]
 	key_id = (FIXTURES / "keys" / "rsa-keyid.txt").read_text().strip().lower()
 	assert item["json"].get("verified") is True, f"signature was not verified: {item['json']}"
@@ -62,7 +64,8 @@ def expect_verified_with_keyid(record: dict, output_name: str) -> None:
 	)
 
 
-def expect_verified_cleartext(record: dict, output_name: str) -> None:
+def expect_verified_cleartext(record: dict, output_name: str, status: int) -> None:
+	assert status == 0, f"n8n exited with {status}"
 	item = node_items(record, "Verify")[0]
 	assert item["json"].get("verified") is True, f"cleartext signature was not verified: {item['json']}"
 	assert item["json"].get("data", "").startswith("OpenPGP fixture plaintext."), (
@@ -70,7 +73,8 @@ def expect_verified_cleartext(record: dict, output_name: str) -> None:
 	)
 
 
-def expect_invalid_signature_error(record: dict, output_name: str) -> None:
+def expect_invalid_signature_error(record: dict, output_name: str, status: int) -> None:
+	assert status != 0, "the workflow failed as expected, but n8n exited with 0"
 	error = record["data"]["resultData"].get("error")
 	assert error, f"the workflow should have failed, but reported no error: {json.dumps(record)[:400]}"
 	message = str(error.get("message", ""))
@@ -100,7 +104,7 @@ def main() -> int:
 	output = sys.stdin.read()
 	try:
 		record = execution(output)
-		expectation(record, output_name)
+		expectation(record, output_name, status)
 	except (AssertionError, KeyError) as failure:
 		print(f"FAIL ({name}): {failure}\n--- output ---\n{output}", file=sys.stderr)
 		return 1

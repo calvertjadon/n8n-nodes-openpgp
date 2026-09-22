@@ -22,12 +22,13 @@ const OPERATIONS: Record<
 const ARMORED_KEY_HINT =
 	'Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first';
 
-const armorOutputOption = (description: string): INodeProperties => ({
+const armorOutputOption = (description: string, displayOptions?: INodeProperties['displayOptions']): INodeProperties => ({
 	displayName: 'Armor Output',
 	name: 'armorOutput',
 	type: 'boolean',
 	default: true,
 	description,
+	...(displayOptions ? { displayOptions } : {}),
 });
 
 const compressionOption: INodeProperties = {
@@ -44,14 +45,14 @@ const compressionOption: INodeProperties = {
 	],
 };
 
-const hideRecipientsOption: INodeProperties = {
+const hideRecipientsOption = (displayOptions?: INodeProperties['displayOptions']): INodeProperties => ({
 	displayName: 'Hide Recipients',
 	name: 'hideRecipients',
 	type: 'boolean',
 	default: false,
-	description:
-		'Whether to encrypt without recording the recipient key IDs in the message. Only used when encrypting with public keys.',
-};
+	description: 'Whether to encrypt without recording the recipient key IDs in the message',
+	...(displayOptions ? { displayOptions } : {}),
+});
 
 const legacyCompatibilityOption: INodeProperties = {
 	displayName: 'Legacy Compatibility',
@@ -244,11 +245,12 @@ export class OpenPgp implements INodeType {
 				displayOptions: { show: { operation: ['encrypt'], outputAs: ['binary'] } },
 			},
 			optionsProperty('encrypt', [
-				armorOutputOption(
-					'Whether to write armored output instead of raw OpenPGP packets. Only used for binary output, since text output is always armored.',
-				),
+				// Text output is always armored, so the option only shapes binary output.
+				armorOutputOption('Whether to write armored output instead of raw OpenPGP packets', {
+					show: { outputAs: ['binary'] },
+				}),
 				compressionOption,
-				hideRecipientsOption,
+				hideRecipientsOption({ show: { encryptUsing: ['publicKeys'] } }),
 				legacyCompatibilityOption,
 			]),
 
@@ -470,12 +472,9 @@ export class OpenPgp implements INodeType {
 				displayOptions: { show: { operation: ['sign'], signatureType: ['detached', 'inline'], outputAs: ['binary'] } },
 			},
 			optionsProperty('sign', [
-				{
-					...armorOutputOption(
-						'Whether to write an armored signature instead of raw OpenPGP packets. Only used for binary output, since text output is always armored.',
-					),
-					displayOptions: { show: { signatureType: ['detached', 'inline'], outputAs: ['binary'] } },
-				},
+				armorOutputOption('Whether to write an armored signature instead of raw OpenPGP packets', {
+					show: { signatureType: ['detached', 'inline'], outputAs: ['binary'] },
+				}),
 				legacyCompatibilityOption,
 			]),
 

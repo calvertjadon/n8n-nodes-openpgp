@@ -109,6 +109,39 @@ describe('Verify', () => {
 		expect(item.json.data).toBe(PLAINTEXT_TEXT.replace(/\n/g, '\r\n'));
 	});
 
+	it('verifies an embedded signed message read from a binary field', async () => {
+		const signed = await executeOne({
+			parameters: {
+				operation: 'sign',
+				signatureType: 'inline',
+				sourceData: 'text',
+				textToSign: 'binary source body\n',
+			},
+			credential: { privateKey: fixture('keys', 'rsa-private.asc') },
+		});
+		const item = await executeOne({
+			parameters: {
+				operation: 'verify',
+				signatureType: 'embedded',
+				sourceData: 'binary',
+				messageBinaryPropertyName: 'signed',
+				publicKeys: RSA_PUBLIC,
+			},
+			binary: {
+				0: {
+					signed: {
+						data: Buffer.from(signed.json.data as string, 'utf8'),
+						fileName: 'signed.asc',
+						mimeType: 'application/pgp-signature',
+					},
+				},
+			},
+		});
+
+		expect(item.json.verified).toBe(true);
+		expect(item.json.data).toBe('binary source body\n');
+	});
+
 	it('reports an unknown signer as unverified when throwing is off', async () => {
 		const item = await executeOne({
 			parameters: {

@@ -59,6 +59,12 @@ export const ERROR_COPY = {
 		description:
 			'Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first, for example with gpg --armor --export.',
 	},
+	unreadablePrivateKey: {
+		message:
+			"Private Key doesn't contain a readable OpenPGP key — paste the full armored block, including BEGIN/END lines.",
+		description:
+			'Fix the Private Key field in the credential: copy the key from its BEGIN line through its END line.',
+	},
 	decryptionFailed: {
 		message:
 			"Couldn't decrypt with this credential's private key — check the Passphrase, or that the message was encrypted for this key.",
@@ -217,7 +223,7 @@ export async function readCredentialPrivateKeys(
 	try {
 		keys = await readKeyBlocks(blocks, config);
 	} catch (error) {
-		throw operationError(ctx, 'unreadableKey', itemIndex, error);
+		throw operationError(ctx, 'unreadablePrivateKey', itemIndex, error);
 	}
 	const passphrase = credential.passphrase ?? '';
 	const privateKeys: openpgp.PrivateKey[] = [];
@@ -236,7 +242,7 @@ export async function readCredentialPrivateKeys(
 		}
 	}
 	if (privateKeys.length === 0) {
-		throw operationError(ctx, 'unreadableKey', itemIndex);
+		throw operationError(ctx, 'unreadablePrivateKey', itemIndex);
 	}
 	return privateKeys;
 }

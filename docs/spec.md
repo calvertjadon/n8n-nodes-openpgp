@@ -404,3 +404,7 @@ does not rediscover them:
   but n8n types the field as `true | UsableAsToolDescription`, so `false` does not compile and
   omitting it fails `@n8n/community-nodes/node-usable-as-tool`. Agents reach the text path by
   setting Source Data and Output As.
+- **The credential's key gets its own copy**: §3.7's unparseable-key row names `Public Key(s)`, but
+  the same failure on the credential's field must name that field instead, so
+  `Private Key doesn't contain a readable OpenPGP key — paste the full armored block, including
+  BEGIN/END lines.` is used when the credential's key block is unreadable or holds no private key.
