@@ -109,12 +109,17 @@ export function operationError(
 	kind: ErrorKind,
 	itemIndex: number,
 	cause?: Error,
+	diagnosis?: string,
 ): NodeOperationError {
 	const { message, description: hint } = ERROR_COPY[kind];
 	// n8n's error panel does not surface `cause`, so the library's own reason goes
 	// into the description: it is what tells a user which part of the input was wrong.
 	const detail =
-		cause instanceof Error && cause.message ? ` The OpenPGP library reported: ${cause.message}` : '';
+		diagnosis !== undefined
+			? ` ${diagnosis}.`
+			: cause instanceof Error && cause.message
+				? ` The OpenPGP library reported: ${cause.message}`
+				: '';
 	const error = new NodeOperationError(ctx.getNode(), message, {
 		itemIndex,
 		description: `${hint}${detail}`,
@@ -184,10 +189,48 @@ function stripArmorHeaders(block: string): string {
 	while (lines.length > 0 && ARMOR_HEADER.test(lines[0]) && !BASE64_LINE.test(lines[0])) {
 		lines.shift();
 	}
-	if (lines[0] === '') {
-		lines.shift();
+	// The body is base64 and a CRC line, neither of which contains whitespace, so
+	// anything a word processor, email client or PDF paste inserted can go.
+	const body = lines
+		.map((line) => line.replace(/\s+/g, ''))
+		.filter((line) => line !== '');
+	return [begin, '', ...body, end].join('\n');
+}
+
+/** Names what is wrong with an armored block, when the library can only say "misformed". */
+export function describeArmorProblem(armored: string): string | undefined {
+	const lines = armored.split('\n');
+	const begin = /^-----BEGIN PGP (.+)-----$/.exec(lines[0] ?? '');
+	if (!begin) {
+		return `the block does not start with a BEGIN line (it starts with ${JSON.stringify((lines[0] ?? '').slice(0, 40))})`;
 	}
-	return [begin, '', ...lines, end].join('\n');
+	// A key copied out of a quoted or dash-escaped message carries prefixes that
+	// hide its own END line, so those are named before anything else.
+	if (lines.some((line) => /^- /.test(line))) {
+		return 'the paste looks dash-escaped from a quoted message — remove the leading "- " prefixes';
+	}
+	if (lines.some((line) => /^>/.test(line))) {
+		return 'the paste came from a quoted message — remove the leading ">" prefixes';
+	}
+	const endIndex = lines.findIndex((line) => /^-----END PGP (.+)-----$/.test(line));
+	if (endIndex === -1) {
+		return `the ${begin[1]} block has no END line — the paste looks truncated`;
+	}
+	const endType = /^-----END PGP (.+)-----$/.exec(lines[endIndex])?.[1];
+	if (endType !== begin[1]) {
+		return `the block starts as ${begin[1]} but ends as ${endType}`;
+	}
+	const body = lines.slice(1, endIndex);
+	for (const [index, line] of body.entries()) {
+		if (line === '' || BASE64_LINE.test(line) || /^=[A-Za-z0-9+/]{4}$/.test(line)) {
+			continue;
+		}
+		return `line ${index + 2} of the block is not valid armored data (${JSON.stringify(line.slice(0, 40))})`;
+	}
+	if (!body.some((line) => BASE64_LINE.test(line))) {
+		return `the ${begin[1]} block has no key data between its BEGIN and END lines`;
+	}
+	return undefined;
 }
 
 /** Reads the armored key block of a key parameter into public keys. */
@@ -205,7 +248,7 @@ export async function readPublicKeys(
 	try {
 		keys = await readKeyBlocks(blocks, config);
 	} catch (error) {
-		throw operationError(ctx, 'unreadableKey', itemIndex, error);
+		throw operationError(ctx, 'unreadableKey', itemIndex, error, describeArmorProblem(blocks[0]));
 	}
 	if (keys.length === 0) {
 		throw operationError(ctx, 'unreadableKey', itemIndex);
@@ -239,7 +282,13 @@ export async function readCredentialPrivateKeys(
 	try {
 		keys = await readKeyBlocks(blocks, config);
 	} catch (error) {
-		throw operationError(ctx, 'unreadablePrivateKey', itemIndex, error);
+		throw operationError(
+			ctx,
+			'unreadablePrivateKey',
+			itemIndex,
+			error,
+			describeArmorProblem(blocks[0]),
+		);
 	}
 	const passphrase = credential.passphrase ?? '';
 	const privateKeys: openpgp.PrivateKey[] = [];

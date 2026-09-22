@@ -299,21 +299,112 @@ describe('key input hardening', () => {
 		expect(error.description).toMatch(/--export-secret-keys/);
 	});
 
-	it('repeats what the OpenPGP library reported, since n8n hides the cause', async () => {
+	it('falls back to what the OpenPGP library reported when it has no better diagnosis', async () => {
+		// A body that is valid base64 but truncated: only the packet parser can tell.
+		const truncated = [
+			'-----BEGIN PGP PUBLIC KEY BLOCK-----',
+			'',
+			...RSA_PUBLIC.split('\n').slice(2, 8),
+			'-----END PGP PUBLIC KEY BLOCK-----',
+		].join('\n');
 		const error = await caughtError({
 			parameters: {
 				operation: 'encrypt',
 				sourceData: 'text',
 				textToEncrypt: 'x',
 				encryptUsing: 'publicKeys',
-				// An armored block with a body the library cannot decode: this reaches
-				// the library, so its reason has to survive into the description.
-				publicKeys: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nnot base64 at all!!\n-----END PGP PUBLIC KEY BLOCK-----',
+				publicKeys: truncated,
 				outputAs: 'text',
 			},
 		});
 
 		expect(error.description).toMatch(/The OpenPGP library reported: /);
+	});
+
+	it('prefers its own diagnosis over the library\'s vague message', async () => {
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				// A body the library cannot decode: the node spots the offending line
+				// itself, which beats the library's vague "Misformed armored text".
+				publicKeys:
+					'-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nnot base64 at all!!\n-----END PGP PUBLIC KEY BLOCK-----',
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/line 3 of the block is not valid armored data/);
+	});
+
+	it('names the line that is not armored data', async () => {
+		const lines = RSA_PUBLIC.split('\n');
+		lines[5] = '!!!! this line is not base64 !!!!';
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				publicKeys: lines.join('\n'),
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/line 6 of the block is not valid armored data/);
+	});
+
+	it('names quoting from a mail client', async () => {
+		const quoted = RSA_PUBLIC.split('\n')
+			.map((line) => (line === '' ? line : `> ${line}`))
+			.join('\n');
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				publicKeys: quoted,
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/leading ">" prefixes/);
+	});
+
+	it('names dash-escaping from a quoted message', async () => {
+		const dashEscaped = RSA_PUBLIC.split('\n')
+			.map((line) => (line.startsWith('-') ? `- ${line}` : line))
+			.join('\n');
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				publicKeys: dashEscaped,
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/dash-escaped/);
+	});
+
+	it('says when the block carries no key data at all', async () => {
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				publicKeys: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n-----END PGP PUBLIC KEY BLOCK-----',
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/no key data between its BEGIN and END lines/);
 	});
 
 	it('accepts a hardened credential key', async () => {
