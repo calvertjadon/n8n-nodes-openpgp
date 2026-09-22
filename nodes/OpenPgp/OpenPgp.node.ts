@@ -11,7 +11,7 @@ import {
 	type INodeType,
 	type INodeTypeDescription,
 } from 'n8n-workflow';
-import { buildConfig, splitArmoredBlocks } from './helpers';
+import { buildConfig, describeArmorProblem, splitArmoredBlocks } from './helpers';
 import { decrypt, encrypt, sign, verify } from './operations';
 
 const OPERATIONS: Record<
@@ -665,11 +665,11 @@ export class OpenPgp implements INodeType {
 					passphrase?: string;
 				};
 				const config = buildConfig({});
+				const blocks = splitArmoredBlocks(String(privateKey ?? ''));
+				if (blocks.length === 0) {
+					return { status: 'Error', message: 'No private key was provided' };
+				}
 				try {
-					const blocks = splitArmoredBlocks(String(privateKey ?? ''));
-					if (blocks.length === 0) {
-						return { status: 'Error', message: 'No private key was provided' };
-					}
 					const keys = [];
 					for (const block of blocks) {
 						keys.push(...(await openpgp.readKeys({ armoredKeys: block, config })));
@@ -678,7 +678,9 @@ export class OpenPgp implements INodeType {
 					if (privateKeys.length === 0) {
 						return {
 							status: 'Error',
-							message: 'The provided key block does not contain a private key',
+							message: blocks[0].startsWith('-----BEGIN PGP PUBLIC KEY BLOCK')
+								? 'This block is a public key — export the private key with gpg --armor --export-secret-keys'
+								: 'The provided key block does not contain a private key',
 						};
 					}
 					for (const key of privateKeys) {
@@ -691,7 +693,10 @@ export class OpenPgp implements INodeType {
 						message: `Private key is usable (key ID ${privateKeys[0].getKeyID().toHex()})`,
 					};
 				} catch (error) {
-					return { status: 'Error', message: (error as Error).message };
+					// The library says only "Misformed armored text", which names no part of
+					// the input, so the armor is inspected here as well.
+					const diagnosis = describeArmorProblem(blocks[0]);
+					return { status: 'Error', message: diagnosis ?? (error as Error).message };
 				}
 			},
 		},

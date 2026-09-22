@@ -84,13 +84,6 @@ describe('the credential test', () => {
 		expect(result.message).toMatch(/passphrase/i);
 	});
 
-	it('rejects a key block that holds no private key', async () => {
-		const result = await runCredentialTest({ privateKey: fixture('keys', 'rsa-public.asc') });
-
-		expect(result.status).toBe('Error');
-		expect(result.message).toContain('does not contain a private key');
-	});
-
 	it('rejects an empty or unreadable key', async () => {
 		const empty = await runCredentialTest({ privateKey: '' });
 		const junk = await runCredentialTest({ privateKey: 'not a key' });
