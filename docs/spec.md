@@ -455,3 +455,10 @@ does not rediscover them:
   already exists ("tag '0.2.2' already exists"). The workflow now creates the tag at the commit it ran on and force
   pushes it, so every release leaves a reachable tag and the version chain stays monotonic. `package.json` and
   `CHANGELOG.md` on `main` still lag (a human can sync them per release; the changelog is in the GitHub Release).
+- **Malformed key armor is diagnosed, not delegated**: OpenPGP.js answers "Misformed armored text" for every
+  formatting problem, which names no part of the input and is therefore unactionable — a user report of exactly that
+  message cost four releases to resolve. The node and the credential test now inspect the block themselves and report
+  the offending line with an excerpt, mail-client quoting, dash-escaping, a missing END line, an empty block or a
+  private-key field holding a public key. Whitespace anywhere inside the body is dropped before parsing, so keys that
+  picked up spaces from a word processor, PDF or email still work, and a value whose newlines arrived escaped (pasted
+  out of JSON, YAML or an env var) is rebuilt before anything else.
