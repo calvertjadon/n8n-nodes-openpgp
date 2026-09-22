@@ -1,5 +1,5 @@
 import * as openpgp from 'openpgp';
-import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import {
 	artifactFileName,
 	assertSignatureOutcome,
@@ -112,16 +112,11 @@ export async function decrypt(ctx: IExecuteFunctions, itemIndex: number): Promis
 	try {
 		result = await openpgp.decrypt(decryptOptions);
 	} catch (error) {
-		if (usingCredential) {
-			throw operationError(ctx, 'decryptionFailed', itemIndex, error);
-		}
-		throw new NodeOperationError(
-			ctx.getNode(),
-			`${(error as Error).message} [Item ${itemIndex}]`,
-			{
-				itemIndex,
-				description: 'Check that the Password is the one the message was encrypted with',
-			},
+		throw operationError(
+			ctx,
+			usingCredential ? 'decryptionFailed' : 'passwordDecryptionFailed',
+			itemIndex,
+			error,
 		);
 	}
 	const outcome = await collapseSignatures(result.signatures ?? []);

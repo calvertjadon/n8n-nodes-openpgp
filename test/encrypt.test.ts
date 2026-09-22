@@ -177,6 +177,26 @@ describe('Encrypt', () => {
 		expect(signatures[0].keyID.toHex()).toBe(fixture('keys', 'rsa-keyid.txt').trim().toLowerCase());
 	});
 
+	it('reads the configured input binary field and writes the configured output field', async () => {
+		const item = await executeOne({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'binary',
+				binaryPropertyName: 'attachment',
+				encryptUsing: 'publicKeys',
+				publicKeys: RSA_PUBLIC,
+				outputAs: 'binary',
+				outputBinaryFieldName: 'ciphertext',
+			},
+			binary: { 0: { attachment: { data: PLAINTEXT, fileName: 'report.txt' } } },
+		});
+
+		expect(item.binary?.ciphertext).toBeDefined();
+		expect(item.json.fileName).toBe('report.txt.asc');
+		const { data } = await openpgpDecrypt(binaryBytes(item, 'ciphertext'), RSA_PRIVATE);
+		expect(data.equals(PLAINTEXT)).toBe(true);
+	});
+
 	it('keeps binary input bytes intact through a text-format literal packet', async () => {
 		const item = await executeOne({
 			parameters: {

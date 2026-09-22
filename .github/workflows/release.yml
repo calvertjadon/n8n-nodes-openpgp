@@ -47,8 +47,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Same lint gate as the fast lane: the scaffold lint minus the one
+      # Cloud-conformance rule this package cannot satisfy (#11).
       - name: Lint
-        run: npm run lint
+        run: npm run lint:ci
 
       - name: Build
         run: npm run build
@@ -64,8 +66,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Post-publish tripwire: the scanner reads published artifacts, so it can
-      # detect a bad publish within minutes but cannot prevent one.
+      # detect a bad publish within minutes but cannot prevent one. It also
+      # reports the one finding this package cannot clear — it ships a runtime
+      # dependency (#11) — so it runs as monitoring: a *new* finding still shows
+      # up in the run, and the release itself is not blocked by the known one.
       - name: Scan published package
+        continue-on-error: true
         run: >-
           npx --yes @n8n/scan-community-package
           "n8n-nodes-openpgp@$(node -p "require('./package.json').version")"

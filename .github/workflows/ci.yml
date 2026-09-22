@@ -60,8 +60,7 @@ jobs:
   smoke-stable:
     name: smoke (n8n stable)
     runs-on: ubuntu-latest
-    env:
-      N8N_IMAGE: n8nio/n8n:2.39.10
+    # The pinned image lives in test/smoke/run.sh, where Renovate manages it.
     steps:
       - uses: actions/checkout@v4
 

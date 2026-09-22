@@ -395,3 +395,12 @@ does not rediscover them:
   `createMessage({ binary, format: 'text' })`, so the node neither canonicalises nor
   normalises line endings in either direction — the bytes a user encrypts are the bytes that
   come back.
+- **Password-mode failures get their own copy**: §3.7's table has a row for a rejected
+  private-key decryption but none for a wrong shared Password, so
+  `Couldn't decrypt with this Password — check that it is the one the message was encrypted
+  with.` joins the canonical set rather than leaking the library's
+  `Session key decryption failed.` to the user.
+- **`usableAsTool` stays `true`**: `.agents/nodes.md` suggests `false` for binary-heavy nodes,
+  but n8n types the field as `true | UsableAsToolDescription`, so `false` does not compile and
+  omitting it fails `@n8n/community-nodes/node-usable-as-tool`. Agents reach the text path by
+  setting Source Data and Output As.

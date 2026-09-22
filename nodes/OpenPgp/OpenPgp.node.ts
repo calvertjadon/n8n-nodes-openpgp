@@ -22,52 +22,55 @@ const OPERATIONS: Record<
 const ARMORED_KEY_HINT =
 	'Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first';
 
-const optionsProperty = (operations: string[]): INodeProperties => ({
+const armorOutputOption = (description: string): INodeProperties => ({
+	displayName: 'Armor Output',
+	name: 'armorOutput',
+	type: 'boolean',
+	default: true,
+	description,
+});
+
+const compressionOption: INodeProperties = {
+	displayName: 'Compression',
+	name: 'compression',
+	type: 'options',
+	default: 'none',
+	description:
+		'The compression algorithm applied to the message before it is encrypted. With public keys the recipients must support the chosen algorithm, otherwise the message is left uncompressed.',
+	options: [
+		{ name: 'None', value: 'none' },
+		{ name: 'ZIP', value: 'zip' },
+		{ name: 'ZLIB', value: 'zlib' },
+	],
+};
+
+const hideRecipientsOption: INodeProperties = {
+	displayName: 'Hide Recipients',
+	name: 'hideRecipients',
+	type: 'boolean',
+	default: false,
+	description:
+		'Whether to encrypt without recording the recipient key IDs in the message. Only used when encrypting with public keys.',
+};
+
+const legacyCompatibilityOption: INodeProperties = {
+	displayName: 'Legacy Compatibility',
+	name: 'legacyCompatibility',
+	type: 'boolean',
+	default: false,
+	description:
+		'Whether to accept legacy OpenPGP material that modern defaults reject: keys without usage flags, v5 entities, and v4 keys AEAD-encrypted by OpenPGP.js v5. The last case is only correct for keys that OpenPGP.js v5 encrypted.',
+};
+
+/** The Options collection is per operation: each action lists what it honours. */
+const optionsProperty = (operation: string, items: INodeProperties[]): INodeProperties => ({
 	displayName: 'Options',
 	name: 'options',
 	type: 'collection',
 	placeholder: 'Add option',
 	default: {},
-	displayOptions: { show: { operation: operations } },
-	options: [
-		{
-			displayName: 'Armor Output',
-			name: 'armorOutput',
-			type: 'boolean',
-			default: true,
-			description:
-				'Whether to write ASCII armored output instead of raw OpenPGP packets. Only used for binary output, since text output is always armored.',
-		},
-		{
-			displayName: 'Compression',
-			name: 'compression',
-			type: 'options',
-			default: 'none',
-			description:
-				'The compression algorithm applied to the message before it is encrypted. With public keys the recipients must support the chosen algorithm, otherwise the message is left uncompressed.',
-			options: [
-				{ name: 'None', value: 'none' },
-				{ name: 'ZIP', value: 'zip' },
-				{ name: 'ZLIB', value: 'zlib' },
-			],
-		},
-		{
-			displayName: 'Hide Recipients',
-			name: 'hideRecipients',
-			type: 'boolean',
-			default: false,
-			description:
-				'Whether to encrypt without recording the recipient key IDs in the message. Only used when encrypting with public keys.',
-		},
-		{
-			displayName: 'Legacy Compatibility',
-			name: 'legacyCompatibility',
-			type: 'boolean',
-			default: false,
-			description:
-				'Whether to accept legacy OpenPGP material that modern defaults reject: keys without usage flags, v5 entities, and v4 keys AEAD-encrypted by OpenPGP.js v5. The last case is only correct for keys that OpenPGP.js v5 encrypted.',
-		},
-	],
+	displayOptions: { show: { operation: [operation] } },
+	options: items,
 });
 
 export class OpenPgp implements INodeType {
@@ -84,6 +87,10 @@ export class OpenPgp implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
+		// n8n types this as `true | UsableAsToolDescription`, so a node cannot opt
+		// out with `false`; the community lint rule requires the property to be
+		// present. Agents can still drive the text path by setting Source Data and
+		// Output As explicitly.
 		usableAsTool: true,
 		credentials: [
 			{
@@ -236,7 +243,14 @@ export class OpenPgp implements INodeType {
 				description: 'The output file is named after the input file, with an .asc or .pgp suffix',
 				displayOptions: { show: { operation: ['encrypt'], outputAs: ['binary'] } },
 			},
-			optionsProperty(['encrypt']),
+			optionsProperty('encrypt', [
+				armorOutputOption(
+					'Whether to write armored output instead of raw OpenPGP packets. Only used for binary output, since text output is always armored.',
+				),
+				compressionOption,
+				hideRecipientsOption,
+				legacyCompatibilityOption,
+			]),
 
 			// Decrypt
 			{
@@ -346,7 +360,7 @@ export class OpenPgp implements INodeType {
 				description: 'The output file is named after the name embedded in the message',
 				displayOptions: { show: { operation: ['decrypt'], outputAs: ['binary'] } },
 			},
-			optionsProperty(['decrypt']),
+			optionsProperty('decrypt', [legacyCompatibilityOption]),
 
 			// Sign
 			{
@@ -455,7 +469,15 @@ export class OpenPgp implements INodeType {
 				description: 'The output file is named after the input file, with a .sig, .asc or .pgp suffix',
 				displayOptions: { show: { operation: ['sign'], signatureType: ['detached', 'inline'], outputAs: ['binary'] } },
 			},
-			optionsProperty(['sign']),
+			optionsProperty('sign', [
+				{
+					...armorOutputOption(
+						'Whether to write an armored signature instead of raw OpenPGP packets. Only used for binary output, since text output is always armored.',
+					),
+					displayOptions: { show: { signatureType: ['detached', 'inline'], outputAs: ['binary'] } },
+				},
+				legacyCompatibilityOption,
+			]),
 
 			// Verify
 			{
@@ -604,7 +626,7 @@ export class OpenPgp implements INodeType {
 					'Whether to fail when the signature does not verify against the provided Public Key(s). Turn this off to branch on the verified field instead.',
 				displayOptions: { show: { operation: ['verify'] } },
 			},
-			optionsProperty(['verify']),
+			optionsProperty('verify', [legacyCompatibilityOption]),
 		],
 	};
 

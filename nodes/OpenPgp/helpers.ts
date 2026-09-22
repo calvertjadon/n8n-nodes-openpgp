@@ -65,6 +65,11 @@ export const ERROR_COPY = {
 		description:
 			'Re-enter the Passphrase in the credential, and confirm the message was encrypted for the key this credential holds.',
 	},
+	passwordDecryptionFailed: {
+		message:
+			"Couldn't decrypt with this Password — check that it is the one the message was encrypted with.",
+		description: 'Check the Password against the one the sender used to encrypt the message.',
+	},
 	unsignedMessage: {
 		message: 'Message is not signed — Require Valid Signature is on.',
 		description: 'Turn Require Valid Signature off to let unsigned data pass through.',
