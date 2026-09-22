@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+  # The release workflow dispatches this for its version-bump branch: events it
+  # creates with GITHUB_TOKEN do not start workflows, so the pull request it
+  # opens would otherwise never get the checks that protect `main`.
+  workflow_dispatch:
 
 # Cancel superseded runs on the same branch or pull request.
 concurrency:

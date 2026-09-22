@@ -91,13 +91,27 @@ jobs:
           fi
 
           before=$(node -p "require('./package.json').version")
-          npx release-it --ci --git.push=false --github.release=false
+          # release-it bumps, writes the changelog, commits and tags; the publish
+          # is run here instead so its output is visible when it goes wrong.
+          npx release-it --ci --git.push=false --github.release=false --npm.publish=false
           version=$(node -p "require('./package.json').version")
           if [ "$before" = "$version" ]; then
             echo "nothing releasable in this push"
             exit 0
           fi
           echo "released=$version" >> "$GITHUB_OUTPUT"
+
+          npm publish
+          for _ in $(seq 1 20); do
+            published=$(npm view "n8n-nodes-openpgp@${version}" version 2>/dev/null || true)
+            [ "$published" = "$version" ] && break
+            sleep 6
+          done
+          if [ "$published" != "$version" ]; then
+            echo "npm does not report ${version} after publishing" >&2
+            exit 1
+          fi
+          echo "npm reports ${version}"
 
           # The changelog release-it just wrote becomes the release notes.
           awk '/^## /{section++} section==1' CHANGELOG.md > /tmp/release-notes.md
@@ -112,6 +126,10 @@ jobs:
           gh pr create --base main --head "release/${version}" \
             --title "chore(release): ${version}" \
             --body-file /tmp/release-notes.md
+          # Events created with GITHUB_TOKEN do not start other workflows, so the
+          # gate has to be dispatched explicitly for the checks to report on this
+          # branch — otherwise the pull request stays blocked forever.
+          gh workflow run ci.yml --ref "release/${version}"
           gh pr merge --merge --auto --delete-branch "release/${version}"
 
       # Post-publish tripwire: the scanner reads published artifacts, so it can
