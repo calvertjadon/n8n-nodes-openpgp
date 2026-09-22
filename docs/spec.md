@@ -422,3 +422,22 @@ does not rediscover them:
   provenance itself. The rule is a verification gate, not a runtime gate, and no retroactive
   re-scan of published packages exists — which is why unverified packages with runtime
   dependencies are the ecosystem's normal state, and why this one keeps `dependencies`.
+- **Release mechanics on a protected default branch**: required status checks cannot be pushed past by a workflow
+  token on a personally-owned repository (GitHub refuses the Actions app as a ruleset bypass actor there), so the
+  release publishes and tags, then lands its version bump and changelog through a pull request that auto-merges —
+  and the bump PR's checks do run, because the pull-request event starts CI. The next version is derived after
+  syncing `package.json` to the last tag, so a bump still in flight cannot make a run recompute a published version.
+- **Publishing is an explicit, idempotent step**: release-it hides the publish command's output, which made a
+  duplicate-publish failure undiagnosable, so the workflow runs `npm publish` itself, tolerates "cannot publish
+  over the previously published versions" (a re-run of a release whose publish already landed), and then requires
+  the version to be visible on the registry before it tags anything.
+- **The npm registry lags a successful publish by minutes.** Confirm with `npm view <pkg>@<version> version` and the
+  tarball URL before concluding a publish failed; reading too early once cost a deleted tag, a closed release pull
+  request and a repair cycle. The workflow's own verification loop polls for that reason.
+- **CI installs with `npm ci --ignore-scripts`**: n8n-workflow pulls `isolated-vm`, whose native build does not
+  compile on brand-new Node majors and costs minutes; nothing the suite runs needs it (install ~16s, suite green).
+- **The smoke lane starts the container's server once and then stops it**: n8n 2.40+ requires an active encryption
+  key before the CLI can import credentials, and the server's bootstrap creates it, but a second n8n process cannot
+  share the task broker port. The kill pattern needs a bracket (`[n]ode /usr/local/bin/n8n`) so `pkill` does not
+  match the shell running it, and the server must be a background child of a shell rather than the image
+  entrypoint's process, or stopping it takes the container down. See [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13).
