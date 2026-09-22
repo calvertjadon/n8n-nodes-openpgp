@@ -9,6 +9,15 @@
 	],
 	"rangeStrategy": "pin",
 	"platformAutomerge": true,
+	"ignorePaths": [
+		"**/node_modules/**",
+		"**/bower_components/**",
+		"**/vendor/**",
+		"**/examples/**",
+		"**/__tests__/**",
+		"**/tests/**",
+		"**/__fixtures__/**"
+	],
 	"labels": [
 		"dependencies"
 	],
@@ -69,6 +78,26 @@
 			],
 			"commitMessagePrefix": "ci(deps):",
 			"semanticCommitType": "ci"
+		},
+		{
+			"description": "eslint 10 crashes the n8n lint stack: @n8n/eslint-plugin-community-nodes pins eslint 9.29.0 exactly",
+			"matchPackageNames": [
+				"eslint"
+			],
+			"matchUpdateTypes": [
+				"major"
+			],
+			"enabled": false
+		},
+		{
+			"description": "typescript 7 removes moduleResolution=node10 and has no lib/typescript.js for ts-morph",
+			"matchPackageNames": [
+				"typescript"
+			],
+			"matchUpdateTypes": [
+				"major"
+			],
+			"enabled": false
 		}
 	],
 	"vulnerabilityAlerts": {
@@ -82,8 +111,8 @@
 		{
 			"customType": "regex",
 			"description": "Pin the n8n image the smoke lane runs against",
-			"fileMatch": [
-				"^test/smoke/run\\.sh$"
+			"managerFilePatterns": [
+				"/^test/smoke/run\\.sh$/"
 			],
 			"matchStrings": [
 				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nN8N_IMAGE=\\$\\{N8N_IMAGE:-[^:]+:(?<currentValue>[^}]+)\\}"

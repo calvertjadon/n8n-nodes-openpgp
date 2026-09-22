@@ -64,6 +64,27 @@ jobs:
       - name: Test
         run: npm test
 
+      # release-it runs only in release.yml, i.e. after the merge, where no
+      # required check can see it — which makes a release-it major the one bump
+      # nothing pre-merge exercises. Mirror release.yml's invocation and derive
+      # the base version from the last tag the same way it does. `--dry-run`
+      # writes nothing. A PR branch has no upstream and release-it exits on
+      # that, so requireUpstream is off; only the Node 24 leg matches
+      # release.yml's own runtime.
+      - name: Dry-run the release path
+        if: matrix.node == '24'
+        run: |
+          set -euo pipefail
+          last_tag=$(git describe --tags --abbrev=0 --match '[0-9]*' 2>/dev/null || true)
+          if [ -n "$last_tag" ]; then
+            npm version "$last_tag" --no-git-tag-version --allow-same-version >/dev/null
+          fi
+          npx release-it --ci --dry-run \
+            --git.requireUpstream=false \
+            --git.push=false \
+            --github.release=false \
+            --npm.publish=false
+
   smoke-stable:
     name: smoke (n8n stable)
     runs-on: ubuntu-latest
