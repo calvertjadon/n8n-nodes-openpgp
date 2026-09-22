@@ -150,21 +150,35 @@ export function buildConfig(options: ConfigOptions): openpgp.PartialConfig {
 }
 
 const ARMOR_BLOCK = /-----BEGIN PGP [^-]*-----[\s\S]*?-----END PGP [^-]*-----/g;
+// A marker that is not already on a line of its own gets one, unless the line it
+// sits on is a quote or dash-escape prefix (`- `, `> `): that mangling is named by
+// describeArmorProblem, so it must survive normalisation untouched.
+const ARMOR_MARKER_UNANCHORED_END = /(-----(?:BEGIN|END) PGP [^-]*-----)(?!\n|$)/g;
+const ARMOR_MARKER_UNANCHORED_START =
+	/(?<!^)(?<!\n)(?<!- )(?<!> )(-----(?:BEGIN|END) PGP [^-]*-----)/g;
 const ARMOR_HEADER = /^[A-Za-z][A-Za-z0-9-]*:/;
 const BASE64_LINE = /^[A-Za-z0-9+/]+={0,2}$/;
 
 /**
  * Normalises pasted key material into one entry per armored block: CRLF line
- * endings, surrounding junk and armor headers that carry no key data (a stray
- * `Version:` line) are removed. openpgp only reads the first block it is given,
- * so callers read the blocks one by one.
+ * endings, flattened line structure, surrounding junk and armor headers that
+ * carry no key data (a stray `Version:` line) are removed. openpgp only reads
+ * the first block it is given, so callers read the blocks one by one.
  */
 export function splitArmoredBlocks(raw: string): string[] {
 	// A value that carries literal `\n` escapes instead of newlines (pasted out of
 	// JSON, YAML or an environment variable) has no line structure for the armor
 	// parser at all, so rebuild it before anything else.
 	const withNewlines = raw.includes('\\n') && !raw.includes('\n') ? raw.replace(/\\r\\n|\\n|\\r/g, '\n') : raw;
-	const blocks = withNewlines.replace(/\r\n?/g, '\n').match(ARMOR_BLOCK) ?? [];
+	// A paste whose newlines were flattened to spaces (a chat client, an email
+	// forward, a rendered page) still carries its markers, but openpgp reads armor
+	// line by line, so re-anchor every BEGIN/END marker that shares its line with
+	// key data.
+	const anchored = withNewlines
+		.replace(/\r\n?/g, '\n')
+		.replace(ARMOR_MARKER_UNANCHORED_END, '$1\n')
+		.replace(ARMOR_MARKER_UNANCHORED_START, '\n$1');
+	const blocks = anchored.match(ARMOR_BLOCK) ?? [];
 	return blocks.map(stripArmorHeaders);
 }
 
@@ -190,10 +204,17 @@ function stripArmorHeaders(block: string): string {
 		lines.shift();
 	}
 	// The body is base64 and a CRC line, neither of which contains whitespace, so
-	// anything a word processor, email client or PDF paste inserted can go.
+	// anything a word processor, email client or PDF paste inserted can go. A
+	// reflowed paste also glues the CRC onto the end of the data; openpgp accepts
+	// it glued, but line-based diagnosis would call the whole line invalid, so
+	// split the checksum back onto a line of its own.
 	const body = lines
 		.map((line) => line.replace(/\s+/g, ''))
-		.filter((line) => line !== '');
+		.filter((line) => line !== '')
+		.flatMap((line) => {
+			const gluedCrc = /^(.+)(=[A-Za-z0-9+/]{4})$/.exec(line);
+			return gluedCrc ? [gluedCrc[1], gluedCrc[2]] : [line];
+		});
 	return [begin, '', ...body, end].join('\n');
 }
 

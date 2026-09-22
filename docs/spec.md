@@ -75,7 +75,7 @@ Declared **`required: false`** on the node, with a per-action runtime check (Enc
 - **Never mutate `openpgp.config`** (process-global singleton, races across concurrent executions). Pass a **per-call** `config` to every call: `maxArgon2MemoryExponent: 20` (1 GiB) and `maxDecompressedMessageSize: 512 * 1024 * 1024` (512 MiB — matches the database binary-mode file cap).
 - **Legacy Compatibility** boolean (Options collection on all four actions, default `false`): when on, adds `allowMissingKeyFlags: true`, `enableParsingV5Entities: true`, `parseAEADEncryptedV4KeysAsLegacy: true` to the per-call config. Help text names what it permits; warns that `parseAEADEncryptedV4KeysAsLegacy` is only correct for v4 keys AEAD-encrypted by OpenPGP.js v5. (Adopted on recommendation in [#6](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/6), flagged revisable; splitting it into three flags later is cheap.)
 - **Text handling**: always call openpgp with `format: 'binary'` and decode UTF-8 ourselves (`new TextDecoder('utf-8', { fatal: true })`) — avoids v6's `format:'utf8'` newline normalisation (CRLF→LF) and turns invalid UTF-8 into a named error instead of U+FFFD.
-- **Key-input hardening** on every key parameter: trim whitespace, normalise CRLF, tolerate junk headers (stray `Version:` lines), accept multi-key armored blocks via `readKeys`. Armored input only (binary keys cannot be pasted).
+- **Key-input hardening** on every key parameter: trim whitespace, normalise CRLF, rebuild flattened line structure (armor pasted as one long line), tolerate junk headers (stray `Version:` lines), accept multi-key armored blocks via `readKeys`. Armored input only (binary keys cannot be pasted).
 - **Source Data** discriminator (Text | Binary) per action; Text reveals an inline string param, Binary reveals *Input Binary Field* (`type: 'string'`, default `data`). **Output As** discriminator (Text | Binary): Text reveals *Output Field Name* (default `data`); Binary reveals *Put Output File in Field* (default `data`).
 - Defaults pinned to the file-centric main path — `Read File → OpenPGP → Write File` all on `data`, zero configuration: Source Data = Binary for Encrypt/Decrypt/Sign/Verify-Embedded; Output As = Binary (Encrypt, Decrypt), Text (Sign), n/a (Verify). Sole exception: Verify's *Signature Source* defaults to Text (armored signatures are text).
 - **Armor Output** boolean (Options on Encrypt/Sign Binary output, default `true`); Text output is always armored; Decrypt has no armor option.
@@ -462,3 +462,10 @@ does not rediscover them:
   private-key field holding a public key. Whitespace anywhere inside the body is dropped before parsing, so keys that
   picked up spaces from a word processor, PDF or email still work, and a value whose newlines arrived escaped (pasted
   out of JSON, YAML or an env var) is rebuilt before anything else.
+- **openpgp reads armor line by line, and a flattened paste still parses** (6.3.1): a key whose newlines were collapsed
+  to spaces (chat client, email forward, rendered page) fails as "Misformed armored text" while all its data is intact.
+  `splitArmoredBlocks` re-anchors BEGIN/END markers that share a line with key data before matching; wrapping of the
+  body itself is irrelevant once the markers are on lines of their own — one long body line, inner spaces and even a
+  CRC glued to the data all parse. Re-anchoring skips markers that sit behind a `- ` or `> ` prefix so the
+  dash-escape/quoting diagnosis still fires, and a glued `=XXXX` CRC is split back onto its own line so line-numbered
+  diagnosis stays honest.

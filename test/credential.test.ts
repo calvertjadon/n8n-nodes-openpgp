@@ -65,6 +65,15 @@ describe('the credential test', () => {
 		expect(result.message).toContain(fixture('keys', 'rsa-keyid.txt').trim().toLowerCase());
 	});
 
+	it('accepts a private key whose newlines were flattened to spaces', async () => {
+		const result = await runCredentialTest({
+			privateKey: fixture('keys', 'rsa-private.asc').replace(/\n+/g, ' '),
+		});
+
+		expect(result.status).toBe('OK');
+		expect(result.message).toContain(fixture('keys', 'rsa-keyid.txt').trim().toLowerCase());
+	});
+
 	it('accepts a protected private key with its passphrase', async () => {
 		const result = await runCredentialTest({
 			privateKey: fixture('keys', 'curve-protected-private.asc'),

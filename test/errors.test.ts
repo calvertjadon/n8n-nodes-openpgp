@@ -233,6 +233,7 @@ describe('key input hardening', () => {
 		'junk around the block': `pasted from an email:\n\n${RSA_PUBLIC.trim()}\n\n-- \nsignature`,
 		'surrounding whitespace': `\n\n  ${RSA_PUBLIC.trim()}  \n\n`,
 		'a multi-key block': `${RSA_PUBLIC.trim()}\n${fixture('keys', 'curve-public.asc').trim()}`,
+		'newlines flattened to spaces': RSA_PUBLIC.replace(/\n+/g, ' '),
 	};
 
 	for (const [description, publicKeys] of Object.entries(hardenedVariants)) {
@@ -417,6 +418,21 @@ describe('key input hardening', () => {
 				outputAs: 'text',
 			},
 			credential: { privateKey: RSA_PRIVATE.replace(/\n/g, '\r\n') },
+		});
+
+		expect(item.json.data).toBe(PLAINTEXT.toString('utf8'));
+	});
+
+	it('accepts a credential key whose newlines were flattened to spaces', async () => {
+		const item = await executeOne({
+			parameters: {
+				operation: 'decrypt',
+				sourceData: 'text',
+				textToDecrypt: fixture('ciphertexts', 'rsa-armored.asc'),
+				decryptUsing: 'privateKey',
+				outputAs: 'text',
+			},
+			credential: { privateKey: RSA_PRIVATE.replace(/\n+/g, ' ') },
 		});
 
 		expect(item.json.data).toBe(PLAINTEXT.toString('utf8'));
