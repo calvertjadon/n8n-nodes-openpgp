@@ -1,0 +1,132 @@
+{
+  "id": "openPgpSmokeKeyRoundTrip",
+  "name": "smoke: key round trip",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "/work/test/fixtures/messages/plaintext.txt",
+        "dataPropertyName": "data"
+      },
+      "id": "read-plaintext",
+      "name": "Read File",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "encrypt",
+        "sourceData": "binary",
+        "encryptUsing": "publicKeys",
+        "publicKeys": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nmQENBGqx+HUBCADqtFaseLJEJKms17uycpkRSGpYdWBYTxo6QDNpR0m+cA+yhAmv\nkp0xutq+BG0oXyR4SuUWQBvj6kgCPsd6B4J9RRRackO+iJmeor/ugSCGPyylr3dn\nYeA90j+VE8JlCG56Lyy5Vb8zzNgKRDOoBeuj6eYbS/aoS5rygpHqRyiN38MU5U46\nNuGwUyyv0pjittv1sLTnY18kunzNwjhtLA1/bRjOLmSo+8SMvCr/cIxuxsaqzVhB\ngWTWZ6XRF888WusyeG/JWBN8sXvOqK8/QcaGrVZCv1ksb4yGocRIVKedVI6ieTOa\nBAusURyyiMT9FS+gN+bTCz6DfqYgevFkIQtzABEBAAG0M09wZW5QR1AgRml4dHVy\nZXMgUlNBIDxyc2FAZml4dHVyZXMub3BlbnBncC5pbnZhbGlkPokBUQQTAQoAOxYh\nBB6JfOvmpU6ezq+drBJ1IZXqWCOzBQJqsfh1AhsPBQsJCAcCAiICBhUKCQgLAgQW\nAgMBAh4HAheAAAoJEBJ1IZXqWCOzhM4H/jw5JfimQdxnuHADYA418YQW7cv9b/gR\nDm8C/4Gaq9DnjqSXQXlcUnryO6MN5yYaQ240kDO6lY7HINDLWVvieTUTo4jje/68\nLOC6wFczttPPK4QP0yue6XfT04WFAtTsN5h6z7H0MmrR2M4P41XRA+jSpOUvHCyy\nmXCQPvNV6oxGC2dv7xigGAwbuaQIqRNjeB+kK5P24W6J5ZobJ1qt5Y2JRRjgpIoc\nDQSn2xvaHAY9xF9kify99AqzPrIHFnSIFPDtfBkTkWGyuhtGKRbO/EUJ9+ujLAfu\nnGqzmWrcBX2GIwPUAHzWdY08wd1QJ0S4Hcg0rnsY0k8O0y9jhUlfQY8=\n=IOZ3\n-----END PGP PUBLIC KEY BLOCK-----\n",
+        "outputAs": "binary"
+      },
+      "id": "encrypt",
+      "name": "Encrypt",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "decrypt",
+        "sourceData": "binary",
+        "decryptUsing": "privateKey",
+        "outputAs": "binary"
+      },
+      "id": "decrypt",
+      "name": "Decrypt",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "openPgpPrivateKeyApi": {
+          "id": "openPgpFixtureKey",
+          "name": "OpenPGP Fixture Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileName": "/work/.smoke-out/key-round-trip.bin",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "write-result",
+      "name": "Write File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Read File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "node": "Encrypt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encrypt": {
+      "main": [
+        [
+          {
+            "node": "Decrypt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decrypt": {
+      "main": [
+        [
+          {
+            "node": "Write File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

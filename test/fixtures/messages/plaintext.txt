@@ -1,0 +1,3 @@
+OpenPGP fixture plaintext.
+Second line with trailing spaces.   
+Third line.
