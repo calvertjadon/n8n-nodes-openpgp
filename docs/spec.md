@@ -355,3 +355,43 @@ scripts/gen-interop-fixtures.sh # regenerates fixtures (gpg required)
 | §7 | [#7](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/7) |
 | §8 | [#8](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/8) |
 | §11 | map [#1](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/1) Out of scope |
+---
+
+## 12. Implementation deltas (post-lock, 2026-09-22)
+
+Everything above stays the record of the locked decisions. Building it against the pinned
+toolchain (`@n8n/node-cli` 0.48.6, `@n8n/eslint-plugin-community-nodes` 0.32.1,
+`eslint-plugin-n8n-nodes-base` 1.16.7, `@n8n/scan-community-package` 0.36.0) surfaced four
+places where the letter of the spec could not be built green. Each has a ticket; each is
+listed here with the mechanism that replaced it.
+
+| Spec | Locked decision | What the build does instead | Ticket |
+|---|---|---|---|
+| §1, §6 | `dependencies: { openpgp: "6.3.1" }` | Unchanged: openpgp stays in `dependencies` (and in `devDependencies`, which is what makes the community import rule accept it). An `optionalDependencies` variant was tried and reverted — n8n's own installer strips `optionalDependencies` before `npm install`, so the package would install without its crypto library. | [#11](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/11) |
+| §2 | Credential `openPgpPrivateKey`, display name "OpenPGP Private Key", class `OpenPgpPrivateKey` | `openPgpPrivateKeyApi`, "OpenPGP Private Key API", class `OpenPgpPrivateKeyApi`, file `credentials/OpenPgpPrivateKeyApi.credentials.ts`. The `-Api` suffix rules are error-level in the blocking lint lane and exempt only built-in credential names. | [#12](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/12) |
+| §2 | "No `test` / `testRequest`" | The node implements a programmatic `methods.credentialTest.openPgpPrivateKeyTest` (parse the armored key, require a private key, unlock it with the Passphrase) and declares the credential with `testedBy`. `credential-test-required` is error-level without one, and n8n's credential tests are not HTTP-only — programmatic tests are a first-class mechanism. | [#12](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/12) |
+| §7.3, §10.4 | Fast lane runs `npm run lint` (`n8n-node lint`); the scan tripwire is clean | The fast lane runs `npm run lint:ci` — the same ESLint run with `@n8n/community-nodes/no-runtime-dependencies` off. That rule forbids runtime dependencies outright (it is `error` in `recommended` *and* `recommendedWithoutCloudSupport`, so the CLI's `cloud-support disable` escape hatch does not clear it), and the scanner applies the same ruleset to `package.json` in both the attested source checkout and the published tarball. A package that ships a runtime dependency therefore cannot have a clean tripwire; the release workflow keeps the tripwire as `continue-on-error` monitoring so a *new* failure is still visible. `npm run lint` itself is unchanged and reports the one known error. | [#11](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/11) |
+
+Implementation-level findings that do not change any decision, recorded so the next session
+does not rediscover them:
+
+- **`openpgp.readKeys` reads only the first armored block** (6.3.1). Multi-key blocks are
+  split by the node before each block is read, which is what makes §3.2's "multi-key block →
+  multiple recipients" work.
+- **`openpgp.encrypt` has no `compression` option in v6**; the Compression option maps onto the
+  per-call config's `preferredCompressionAlgorithm`, which password mode honours directly and
+  key mode negotiates against recipient preferences — exactly as §3.2 describes the semantics.
+- **Cleartext verification must use `format: 'utf8'`**: the library rejects binary output for
+  cleartext messages. Every other call stays on `format: 'binary'` with the node's own UTF-8
+  decoding, per §3.1.
+- **`displayOptions` has no OR**: `show` is AND across keys. The Sign text field and the
+  Verify message fields are therefore declared twice with mutually exclusive conditions
+  (Cleartext vs. Source Data = Text; Detached vs. Embedded), which yields the locked UX
+  without touching `displayOptions` semantics.
+- **Icon**: a placeholder SVG lands at the spec-pinned path because the lint rules require the
+  file to exist; the artwork is [#10](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/10)'s
+  to replace, and `icon-prefer-themed-variants` stays a warning until it does.
+- **Binary input for the text parameters**: a text-format literal packet is written with
+  `createMessage({ binary, format: 'text' })`, so the node neither canonicalises nor
+  normalises line endings in either direction — the bytes a user encrypts are the bytes that
+  come back.
