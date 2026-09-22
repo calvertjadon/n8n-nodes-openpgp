@@ -17,9 +17,7 @@ on:
 
 permissions:
   contents: write
-  # gh pr create / gh pr merge --auto for the version-bump pull request, and
-  # release-it's comments on the issues named in the changelog.
-  pull-requests: write
+  # release-it comments on the issues named in the changelog.
   issues: write
   id-token: write
 
@@ -119,26 +117,11 @@ jobs:
           # The changelog release-it just wrote becomes the release notes.
           awk '/^## /{section++} section==1' CHANGELOG.md > /tmp/release-notes.md
 
-          # Tags are unprotected, so the release is created here; the version
-          # bump reaches main through the pull request below (merge commit, so
-          # the tag stays an ancestor of main).
+          # Tags are unprotected, so the release is published and tagged from
+          # here. The version bump does not travel to `main`: the default branch
+          # requires status checks, a workflow token cannot push past them on a
+          # personally-owned repository, and a pull request opened with
+          # GITHUB_TOKEN needs a human to approve its run — so every release
+          # re-derives its base version from the last tag instead (see §12).
           git push origin "refs/tags/${version}"
           gh release create "${version}" --title "${version}" --notes-file /tmp/release-notes.md
-
-          git push origin "HEAD:refs/heads/release/${version}"
-          gh pr create --base main --head "release/${version}" \
-            --title "chore(release): ${version}" \
-            --body-file /tmp/release-notes.md
-          gh pr merge --merge --auto --delete-branch "release/${version}"
-
-      # Post-publish tripwire: the scanner reads published artifacts, so it can
-      # detect a bad publish within minutes but cannot prevent one. It also
-      # reports the one finding this package cannot clear — it ships a runtime
-      # dependency (#11) — so it runs as monitoring: a *new* finding still shows
-      # up in the run, and the release itself is not blocked by the known one.
-      - name: Scan published package
-        if: steps.release.outputs.released != ''
-        continue-on-error: true
-        run: >-
-          npx --yes @n8n/scan-community-package
-          "n8n-nodes-openpgp@${{ steps.release.outputs.released }}"

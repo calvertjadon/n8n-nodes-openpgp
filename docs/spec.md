@@ -441,3 +441,12 @@ does not rediscover them:
   share the task broker port. The kill pattern needs a bracket (`[n]ode /usr/local/bin/n8n`) so `pkill` does not
   match the shell running it, and the server must be a background child of a shell rather than the image
   entrypoint's process, or stopping it takes the container down. See [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13).
+- **A release cannot land its version bump on a protected default branch hands-off.** Three mechanisms were tested and
+  all fail on a personally-owned repository: a workflow token cannot push past required status checks (GitHub refuses
+  the Actions app as a ruleset bypass actor there); a pull request opened with `GITHUB_TOKEN` gets its workflow run
+  parked at `action_required`, needing a human to approve it to run, even with "Allow GitHub Actions to create and
+  approve pull requests" enabled; and an explicitly dispatched run on the release branch passes every job but does not
+  satisfy the pull request's required checks. The release therefore publishes and tags only, and every release derives
+  its next version from the last tag — `package.json` and `CHANGELOG.md` on `main` lag until a human syncs them, while
+  the changelog itself is in the GitHub Release. Verified end to end: `0.2.2` published with provenance and tagged
+  from a `fix:` push with no human in the loop.
