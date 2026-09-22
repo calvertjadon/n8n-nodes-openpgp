@@ -17,6 +17,10 @@ on:
 
 permissions:
   contents: write
+  # gh pr create / gh pr merge --auto for the version-bump pull request, and
+  # release-it's comments on the issues named in the changelog.
+  pull-requests: write
+  issues: write
   id-token: write
 
 concurrency:
