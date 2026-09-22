@@ -37,29 +37,46 @@ TARBALL=$(cd "$REPO_ROOT" && npm pack --pack-destination "$REPO_ROOT" | tail -n 
 echo "packed $TARBALL"
 
 log "Starting $N8N_IMAGE"
-# No server: every step is a one-off CLI process, so the task broker port stays
-# free and nothing competes for the SQLite database. The image entrypoint would
-# otherwise treat the command as an n8n CLI subcommand.
+# The server has to run once: n8n 2.40+ requires an active encryption key before
+# the CLI can import credentials, and the server's bootstrap is what creates and
+# registers it. It is started detached inside a shell rather than as the
+# container's main process, so it can be stopped again — a second n8n process
+# cannot share the task broker port.
 docker run -d --name "$CONTAINER" \
-	--entrypoint sleep \
+	--entrypoint sh \
 	-v "$REPO_ROOT:$MOUNT" \
 	-e N8N_UNVERIFIED_PACKAGES_ENABLED=true \
 	-e N8N_DIAGNOSTICS_ENABLED=false \
 	-e N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES=false \
 	-e N8N_RESTRICT_FILE_ACCESS_TO="$MOUNT;/home/node/.n8n-files" \
-	"$N8N_IMAGE" infinity >/dev/null
+	"$N8N_IMAGE" -c 'n8n start & sleep infinity' >/dev/null
 
-for _ in $(seq 1 30); do
-	if docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null | grep -q true; then
+ready=0
+for _ in $(seq 1 90); do
+	if ! docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null | grep -q true; then
+		break
+	fi
+	if docker logs "$CONTAINER" 2>&1 | grep -q 'Editor is now accessible'; then
+		ready=1
 		break
 	fi
 	sleep 2
 done
-docker inspect -f '{{.State.Running}}' "$CONTAINER" | grep -q true || {
+if [ "$ready" != 1 ]; then
 	docker logs --tail 60 "$CONTAINER" 2>&1 || true
-	echo "the n8n container did not stay up" >&2
+	echo "n8n did not become ready" >&2
 	exit 1
-}
+fi
+
+log "Stopping the server so the CLI owns the process"
+# Bracket in the pattern so pkill does not match the shell running it.
+docker exec "$CONTAINER" sh -c 'pkill -f "[n]ode /usr/local/bin/n8n" || true'
+for _ in $(seq 1 30); do
+	if ! docker exec "$CONTAINER" sh -c 'pgrep -f "[n]ode /usr/local/bin/n8n" >/dev/null'; then
+		break
+	fi
+	sleep 1
+done
 
 log "Installing the tarball into $NODES_DIR"
 # Mirrors n8n's own community-package installer: extract the tarball, drop the
@@ -89,12 +106,12 @@ mkdir -p /home/node/.n8n-files/smoke
 INSTALL
 
 log "Importing credentials and workflows"
-docker exec "$CONTAINER" n8n import:credentials --input "$MOUNT/test/fixtures/smoke/credentials.json" >/dev/null
+docker exec -e N8N_RUNNERS_ENABLED=false "$CONTAINER" n8n import:credentials --input "$MOUNT/test/fixtures/smoke/credentials.json" >/dev/null
 for workflow in "$REPO_ROOT"/test/fixtures/smoke/*.json; do
 	case "$workflow" in
 	*/credentials.json) continue ;;
 	esac
-	docker exec "$CONTAINER" n8n import:workflow --input "$MOUNT/test/fixtures/smoke/$(basename "$workflow")" >/dev/null
+	docker exec -e N8N_RUNNERS_ENABLED=false "$CONTAINER" n8n import:workflow --input "$MOUNT/test/fixtures/smoke/$(basename "$workflow")" >/dev/null
 done
 
 # Executes one workflow, copies any written result out of the container and hands
@@ -103,7 +120,7 @@ run_workflow() {
 	local id=$1 expectation=$2 output_name=$3
 	local output status
 	set +e
-	output=$(docker exec "$CONTAINER" n8n execute --id "$id" --raw-output 2>&1)
+	output=$(docker exec -e N8N_RUNNERS_ENABLED=false "$CONTAINER" n8n execute --id "$id" --raw-output 2>&1)
 	status=$?
 	if [ "$output_name" != '-' ]; then
 		docker cp "$CONTAINER:/home/node/.n8n-files/smoke/$output_name" "$REPO_ROOT/.smoke-out/$output_name" >/dev/null 2>&1 || true
