@@ -65,6 +65,12 @@ export const ERROR_COPY = {
 		description:
 			'Fix the Private Key field in the credential: copy the key from its BEGIN line through its END line.',
 	},
+	privateKeyIsPublic: {
+		message:
+			"Private Key holds a public key — it can't decrypt or sign. Paste the armored private key block instead.",
+		description:
+			'Export the private key with gpg --armor --export-secret-keys <key ID>, including the BEGIN and END lines.',
+	},
 	decryptionFailed: {
 		message:
 			"Couldn't decrypt with this credential's private key — check the Passphrase, or that the message was encrypted for this key.",
@@ -104,10 +110,14 @@ export function operationError(
 	itemIndex: number,
 	cause?: Error,
 ): NodeOperationError {
-	const { message, description } = ERROR_COPY[kind];
+	const { message, description: hint } = ERROR_COPY[kind];
+	// n8n's error panel does not surface `cause`, so the library's own reason goes
+	// into the description: it is what tells a user which part of the input was wrong.
+	const detail =
+		cause instanceof Error && cause.message ? ` The OpenPGP library reported: ${cause.message}` : '';
 	const error = new NodeOperationError(ctx.getNode(), message, {
 		itemIndex,
-		description,
+		description: `${hint}${detail}`,
 	});
 	if (cause !== undefined) {
 		error.cause = cause;
@@ -145,7 +155,11 @@ const BASE64_LINE = /^[A-Za-z0-9+/]+={0,2}$/;
  * so callers read the blocks one by one.
  */
 export function splitArmoredBlocks(raw: string): string[] {
-	const blocks = raw.replace(/\r\n?/g, '\n').match(ARMOR_BLOCK) ?? [];
+	// A value that carries literal `\n` escapes instead of newlines (pasted out of
+	// JSON, YAML or an environment variable) has no line structure for the armor
+	// parser at all, so rebuild it before anything else.
+	const withNewlines = raw.includes('\\n') && !raw.includes('\n') ? raw.replace(/\\r\\n|\\n|\\r/g, '\n') : raw;
+	const blocks = withNewlines.replace(/\r\n?/g, '\n').match(ARMOR_BLOCK) ?? [];
 	return blocks.map(stripArmorHeaders);
 }
 
@@ -162,7 +176,9 @@ async function readKeyBlocks(
 }
 
 function stripArmorHeaders(block: string): string {
-	const lines = block.split('\n').map((line) => line.trimEnd());
+	// Armor is flush left: leading whitespace only ever comes from the surrounding
+	// text it was copied out of (indented YAML, a markdown list, a quoted block).
+	const lines = block.split('\n').map((line) => line.trim());
 	const begin = lines.shift() ?? '';
 	const end = lines.pop() ?? '';
 	while (lines.length > 0 && ARMOR_HEADER.test(lines[0]) && !BASE64_LINE.test(lines[0])) {
@@ -242,7 +258,7 @@ export async function readCredentialPrivateKeys(
 		}
 	}
 	if (privateKeys.length === 0) {
-		throw operationError(ctx, 'unreadablePrivateKey', itemIndex);
+		throw operationError(ctx, 'privateKeyIsPublic', itemIndex);
 	}
 	return privateKeys;
 }

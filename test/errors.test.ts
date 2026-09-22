@@ -252,6 +252,70 @@ describe('key input hardening', () => {
 		});
 	}
 
+	it('accepts an indented key, as pasted out of YAML or a quoted block', async () => {
+		const item = await executeOne({
+			parameters: {
+				operation: 'decrypt',
+				sourceData: 'text',
+				textToDecrypt: fixture('ciphertexts', 'rsa-armored.asc'),
+				decryptUsing: 'privateKey',
+				outputAs: 'text',
+			},
+			credential: { privateKey: RSA_PRIVATE.split('\n').map((line) => `    ${line}`).join('\n') },
+		});
+
+		expect(item.json.data).toBe(PLAINTEXT.toString('utf8'));
+	});
+
+	it('accepts a key whose newlines arrived escaped, as pasted out of JSON or an env var', async () => {
+		const item = await executeOne({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'escaped',
+				encryptUsing: 'publicKeys',
+				publicKeys: RSA_PUBLIC.replace(/\n/g, '\\n'),
+				outputAs: 'text',
+			},
+		});
+
+		expect(item.json.data).toMatch(/^-----BEGIN PGP MESSAGE-----/);
+	});
+
+	it('says a public key was pasted when the credential holds no private key', async () => {
+		const error = await caughtError({
+			parameters: {
+				operation: 'sign',
+				signatureType: 'detached',
+				sourceData: 'text',
+				textToSign: 'needs a private key',
+			},
+			credential: { privateKey: RSA_PUBLIC },
+		});
+
+		expect(error.message).toBe(
+			"Private Key holds a public key — it can't decrypt or sign. Paste the armored private key block instead. [Item 0]",
+		);
+		expect(error.description).toMatch(/--export-secret-keys/);
+	});
+
+	it('repeats what the OpenPGP library reported, since n8n hides the cause', async () => {
+		const error = await caughtError({
+			parameters: {
+				operation: 'encrypt',
+				sourceData: 'text',
+				textToEncrypt: 'x',
+				encryptUsing: 'publicKeys',
+				// An armored block with a body the library cannot decode: this reaches
+				// the library, so its reason has to survive into the description.
+				publicKeys: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nnot base64 at all!!\n-----END PGP PUBLIC KEY BLOCK-----',
+				outputAs: 'text',
+			},
+		});
+
+		expect(error.description).toMatch(/The OpenPGP library reported: /);
+	});
+
 	it('accepts a hardened credential key', async () => {
 		const item = await executeOne({
 			parameters: {
