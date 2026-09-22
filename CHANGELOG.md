@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.0...0.2.1) (2026-09-22)
+
+### Bug Fixes
+
+* give the smoke lane the encryption key n8n 2.40 needs ([8c5e220](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/8c5e2205930de351117d0457579e8497b7e5d7dd)), references [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13)
+
 ## 0.2.0 (2026-09-22)
 
 ### Features

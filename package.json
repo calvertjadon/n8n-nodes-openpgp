@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-openpgp",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Encrypt, decrypt, sign, and verify data with OpenPGP — key-based or password-based.",
 	"license": "MIT",
 	"homepage": "https://github.com/calvertjadon/n8n-nodes-openpgp#readme",
