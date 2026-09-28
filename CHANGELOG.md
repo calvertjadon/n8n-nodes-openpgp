@@ -1,33 +1,7 @@
 # Changelog
 
-## Unreleased
+## Published releases
 
-### Bug Fixes
+Version history and release notes live in [GitHub Releases](https://github.com/calvertjadon/n8n-nodes-openpgp/releases).
 
-* make `chore(deps)` commits produce patch releases and tolerate npm's publish-processing delay
-* follow the supported `n8n-workflow` stable line and remove high-severity development advisories
-
-## [0.2.2](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.1...0.2.2) (2026-09-22)
-
-### Bug Fixes
-
-* use the file node that exists on both n8n 2.39 and 2.40 ([b5765b0](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/b5765b09d01edf8ffcebf0c8634a44c4937553f2)), references [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13)
-
-## [0.2.1](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.0...0.2.1) (2026-09-22)
-
-### Bug Fixes
-
-* give the smoke lane the encryption key n8n 2.40 needs ([8c5e220](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/8c5e2205930de351117d0457579e8497b7e5d7dd)), references [#13](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/13)
-
-## 0.2.0 (2026-09-22)
-
-### Features
-
-* add the OpenPGP node, credential and package scaffold ([a956225](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/a956225056a7508da35a57a12c323e202f0ec644)), references [#11](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/11) [#12](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/12)
-
-### Bug Fixes
-
-* address the review findings in the node, options and release lane ([2a273e3](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/2a273e31c6499940f36606a3d9e9dc8bc14c7b4e))
-* cover the credential test and tighten the smoke assertions ([b9a01a4](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/b9a01a4eb13f1011e592383b92dc37bcba4bb0ed))
-* make the first real release and the smoke lane work in CI ([55d6b15](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/55d6b1519520e030b277de803e210c91ddfe385f))
-* offer each operation's options in the editor and cover the table ([b359bba](https://github.com/calvertjadon/n8n-nodes-openpgp/commit/b359bbad5099d83b5f656b18d3d0d8cd1966f4c8))
+The `main` branch is unreleased development. Release automation derives published versions from Git tags and generates each release's notes from conventional commits.
