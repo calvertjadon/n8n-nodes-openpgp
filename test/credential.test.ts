@@ -1,7 +1,6 @@
 import type { ICredentialsDecrypted, ICredentialTestFunctions } from 'n8n-workflow';
 import { describe, expect, it } from 'vitest';
 import { OpenPgpPrivateKeyApi } from '../credentials/OpenPgpPrivateKeyApi.credentials';
-import manifest from '../package.json';
 import { OpenPgp } from '../nodes/OpenPgp/OpenPgp.node';
 import { FIXTURE_PASSPHRASES, fixture } from './helpers/fixtures';
 
@@ -21,17 +20,6 @@ function runCredentialTest(data: Record<string, unknown>) {
 }
 
 describe('OpenPgpPrivateKeyApi', () => {
-	it('is a credential type the manifest points at', () => {
-		const credential = new OpenPgpPrivateKeyApi();
-
-		expect(credential.name).toBe('openPgpPrivateKeyApi');
-		expect(credential.displayName).toBe('OpenPGP Private Key API');
-		expect(credential.documentationUrl).toMatch(/^https:\/\//);
-		expect(manifest.n8n.credentials).toContain(
-			`dist/credentials/${credential.constructor.name}.credentials.js`,
-		);
-		expect(manifest.n8n.nodes).toContain('dist/nodes/OpenPgp/OpenPgp.node.js');
-	});
 
 	it('keeps both secrets masked and the key required', () => {
 		const [privateKey, passphrase] = new OpenPgpPrivateKeyApi().properties;

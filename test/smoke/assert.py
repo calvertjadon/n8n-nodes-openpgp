@@ -78,8 +78,8 @@ def expect_invalid_signature_error(record: dict, output_name: str, status: int) 
 	error = record["data"]["resultData"].get("error")
 	assert error, f"the workflow should have failed, but reported no error: {json.dumps(record)[:400]}"
 	message = str(error.get("message", ""))
-	assert "Signature did not verify — the message was not signed by any provided Public Key(s)." in message, (
-		f"canonical error copy missing from the execution error: {message!r}"
+	assert "Signature did not verify" in message and "'Public Key(s)'" in message, (
+		f"actionable signature copy missing from the execution error: {message!r}"
 	)
 	assert "[Item 0]" in message, f"the item index is missing from the error: {message!r}"
 

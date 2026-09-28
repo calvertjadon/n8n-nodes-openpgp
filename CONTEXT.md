@@ -50,9 +50,9 @@ _Avoid_: password
 Encryption or decryption with a shared Password instead of keys.
 _Avoid_: symmetric mode
 
-**OpenPGP Private Key**:
-The credential type holding an armored private key and its Passphrase.
-_Avoid_: PGP credential, key credential
+**OpenPGP Private Key API**:
+The credential type holding an armored private key and its Passphrase. The name includes "API" to satisfy n8n's credential naming rules; it does not call a remote API.
+_Avoid_: OpenPGP Private Key, PGP credential, key credential
 
 ### Compatibility
 

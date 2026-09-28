@@ -5,9 +5,12 @@ export class OpenPgpPrivateKeyApi implements ICredentialType {
 
 	displayName = 'OpenPGP Private Key API';
 
-	documentationUrl = 'https://github.com/calvertjadon/n8n-nodes-openpgp#readme';
+	documentationUrl = 'https://github.com/calvertjadon/n8n-nodes-openpgp#credential-setup';
 
-	icon = 'file:openPgpPrivateKeyApi.svg' as const;
+	icon = {
+		light: 'file:openPgpPrivateKeyApi.svg',
+		dark: 'file:openPgpPrivateKeyApi.dark.svg',
+	} as const;
 
 	properties: INodeProperties[] = [
 		{
@@ -21,9 +24,9 @@ export class OpenPgpPrivateKeyApi implements ICredentialType {
 			default: '',
 			required: true,
 			placeholder: 'e.g. -----BEGIN PGP PRIVATE KEY BLOCK-----',
-			hint: 'Paste the whole block, BEGIN and END lines included — a binary key file must be exported as armored text first (gpg --armor --export-secret-keys)',
+			hint: "Paste the whole block, BEGIN and END lines included. A binary key file must be exported as armored text first, for example with 'gpg --armor --export-secret-keys'.",
 			description:
-				'The armored private key used to decrypt and sign. Paste the complete block, including the BEGIN and END lines.',
+				"The armored private key used to decrypt and sign. Paste the complete block, including the 'BEGIN' and 'END' lines.",
 		},
 		{
 			displayName: 'Passphrase',
@@ -33,10 +36,10 @@ export class OpenPgpPrivateKeyApi implements ICredentialType {
 				password: true,
 			},
 			default: '',
-			placeholder: 'e.g. the passphrase of the private key',
-			hint: 'Leave empty when the key is not protected by a passphrase',
+			placeholder: 'e.g. privateKeyPassphrase',
+			hint: "Leave empty when the key is not protected by a 'Passphrase'",
 			description:
-				'The passphrase that unlocks the private key. Leave empty when the key is not protected by one.',
+				"The 'Passphrase' that unlocks the private key. Leave empty when the key is not protected by one.",
 		},
 	];
 }

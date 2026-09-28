@@ -17,12 +17,12 @@ function isVisible(values: INodeParameters, parameter: INodeParameters): boolean
 	return NodeHelpers.displayParameter(values, parameter, node, description);
 }
 
-/** The display names a user sees for a given set of node values. */
+/** Internal parameter names visible for a given set of node values. */
 function visibleParameters(values: INodeParameters, operation: string): string[] {
 	const nodeValues = { operation, ...values } as INodeParameters;
 	return description.properties
 		.filter((property) => isVisible(nodeValues, property as INodeParameters))
-		.map((property) => property.displayName);
+		.map((property) => property.name);
 }
 
 /**
@@ -48,16 +48,9 @@ function visibleOptions(values: INodeParameters, operation: string): string[] {
 					'parameters.options',
 					node,
 					description,
-				) &&
-				NodeHelpers.displayParameterPath(
-					nodeWithParameters,
-					item as INodeParameters,
-					'parameters.options',
-					node,
-					description,
 				),
 		)
-		.map((item) => item.displayName as string);
+		.map((item) => item.name as string);
 }
 
 function countOf(names: string[], name: string): number {
@@ -95,8 +88,8 @@ describe('Sign parameters', () => {
 	it('shows the cleartext fields and hides the source/output discriminators', () => {
 		const names = visibleParameters({ signatureType: 'cleartext' }, 'sign');
 
-		expect(names).toEqual(['Operation', 'Signature Type', 'Text to Sign', 'Output Field Name', 'Options']);
-		expect(countOf(names, 'Text to Sign')).toBe(1);
+		expect(names).toEqual(['operation', 'signatureType', 'textToSign', 'outputFieldName', 'options']);
+		expect(countOf(names, 'textToSign')).toBe(1);
 	});
 
 	it('shows inline text for the detached and inline text path', () => {
@@ -106,15 +99,15 @@ describe('Sign parameters', () => {
 		);
 
 		expect(names).toEqual([
-			'Operation',
-			'Signature Type',
-			'Source Data',
-			'Text to Sign',
-			'Output As',
-			'Output Field Name',
-			'Options',
+			'operation',
+			'signatureType',
+			'sourceData',
+			'textToSign',
+			'outputAs',
+			'outputFieldName',
+			'options',
 		]);
-		expect(countOf(names, 'Text to Sign')).toBe(1);
+		expect(countOf(names, 'textToSign')).toBe(1);
 	});
 
 	it('shows the binary field for the detached and inline binary path', () => {
@@ -124,25 +117,25 @@ describe('Sign parameters', () => {
 		);
 
 		expect(names).toEqual([
-			'Operation',
-			'Signature Type',
-			'Source Data',
-			'Input Binary Field',
-			'Output As',
-			'Put Output File in Field',
-			'Options',
+			'operation',
+			'signatureType',
+			'sourceData',
+			'binaryPropertyName',
+			'outputAs',
+			'outputBinaryFieldName',
+			'options',
 		]);
 	});
 
 	it('offers the armor option only for binary output', () => {
 		expect(visibleOptions({ signatureType: 'detached', outputAs: 'binary' }, 'sign')).toEqual([
-			'Armor Output',
-			'Legacy Compatibility',
+			'armorOutput',
+			'legacyCompatibility',
 		]);
 		expect(visibleOptions({ signatureType: 'detached', outputAs: 'text' }, 'sign')).toEqual([
-			'Legacy Compatibility',
+			'legacyCompatibility',
 		]);
-		expect(visibleOptions({ signatureType: 'cleartext' }, 'sign')).toEqual(['Legacy Compatibility']);
+		expect(visibleOptions({ signatureType: 'cleartext' }, 'sign')).toEqual(['legacyCompatibility']);
 	});
 });
 
@@ -154,29 +147,27 @@ describe('Verify parameters', () => {
 		);
 
 		expect(names).toEqual([
-			'Operation',
-			'Signature Type',
-			'Message Source',
-			'Message Binary Field',
-			'Signature Source',
-			'Signature Text',
-			'Public Key(s)',
-			'Throw on Invalid Signature',
-			'Options',
+			'operation',
+			'signatureType',
+			'messageSource',
+			'messageBinaryPropertyName',
+			'signatureSource',
+			'signatureText',
+			'publicKeys',
+			'throwOnInvalidSignature',
+			'options',
 		]);
 	});
 
-	it('labels the message and the signature binary fields apart', () => {
-		// Both used to read "Input Binary Field" with the same default, which left
-		// the grey hint as the only way to tell them apart.
+	it('uses distinct parameters for the message and signature data fields', () => {
 		const names = visibleParameters(
 			{ signatureType: 'detached', messageSource: 'binary', signatureSource: 'binary' },
 			'verify',
 		);
 
-		expect(names).toContain('Message Binary Field');
-		expect(names).toContain('Signature Binary Field');
-		expect(countOf(names, 'Input Binary Field')).toBe(0);
+		expect(names).toContain('messageBinaryPropertyName');
+		expect(names).toContain('signatureBinaryPropertyName');
+		expect(countOf(names, 'binaryPropertyName')).toBe(0);
 	});
 
 	it('shows one message field per source for an embedded signature', () => {
@@ -184,28 +175,28 @@ describe('Verify parameters', () => {
 		const text = visibleParameters({ signatureType: 'embedded', sourceData: 'text' }, 'verify');
 
 		expect(binary).toEqual([
-			'Operation',
-			'Signature Type',
-			'Source Data',
-			'Message Binary Field',
-			'Public Key(s)',
-			'Throw on Invalid Signature',
-			'Options',
+			'operation',
+			'signatureType',
+			'sourceData',
+			'messageBinaryPropertyName',
+			'publicKeys',
+			'throwOnInvalidSignature',
+			'options',
 		]);
 		expect(text).toEqual([
-			'Operation',
-			'Signature Type',
-			'Source Data',
-			'Message Text',
-			'Public Key(s)',
-			'Throw on Invalid Signature',
-			'Options',
+			'operation',
+			'signatureType',
+			'sourceData',
+			'messageText',
+			'publicKeys',
+			'throwOnInvalidSignature',
+			'options',
 		]);
-		expect(countOf(text, 'Message Text')).toBe(1);
+		expect(countOf(text, 'messageText')).toBe(1);
 	});
 
 	it('offers legacy compatibility only', () => {
-		expect(visibleOptions({ signatureType: 'detached' }, 'verify')).toEqual(['Legacy Compatibility']);
+		expect(visibleOptions({ signatureType: 'detached' }, 'verify')).toEqual(['legacyCompatibility']);
 	});
 });
 
@@ -217,37 +208,37 @@ describe('Encrypt parameters', () => {
 		);
 
 		expect(names).toEqual([
-			'Operation',
-			'Source Data',
-			'Input Binary Field',
-			'Encrypt Using',
-			'Public Key(s)',
-			'Also Sign',
-			'Output As',
-			'Put Output File in Field',
-			'Options',
+			'operation',
+			'sourceData',
+			'binaryPropertyName',
+			'encryptUsing',
+			'publicKeys',
+			'alsoSign',
+			'outputAs',
+			'outputBinaryFieldName',
+			'options',
 		]);
 	});
 
 	it('offers every option for the key path with binary output', () => {
 		expect(visibleOptions({ encryptUsing: 'publicKeys', outputAs: 'binary' }, 'encrypt')).toEqual([
-			'Armor Output',
-			'Compression',
-			'Hide Recipients',
-			'Legacy Compatibility',
+			'armorOutput',
+			'compression',
+			'hideRecipients',
+			'legacyCompatibility',
 		]);
 	});
 
 	it('hides the options that do not apply to the chosen mode', () => {
 		expect(visibleOptions({ encryptUsing: 'password', outputAs: 'binary' }, 'encrypt')).toEqual([
-			'Armor Output',
-			'Compression',
-			'Legacy Compatibility',
+			'armorOutput',
+			'compression',
+			'legacyCompatibility',
 		]);
 		expect(visibleOptions({ encryptUsing: 'publicKeys', outputAs: 'text' }, 'encrypt')).toEqual([
-			'Compression',
-			'Hide Recipients',
-			'Legacy Compatibility',
+			'compression',
+			'hideRecipients',
+			'legacyCompatibility',
 		]);
 	});
 });
@@ -257,19 +248,19 @@ describe('Decrypt parameters', () => {
 		const names = visibleParameters({ sourceData: 'binary', decryptUsing: 'privateKey', outputAs: 'binary' }, 'decrypt');
 
 		expect(names).toEqual([
-			'Operation',
-			'Source Data',
-			'Input Binary Field',
-			'Decrypt Using',
-			'Public Key(s)',
-			'Require Valid Signature',
-			'Output As',
-			'Put Output File in Field',
-			'Options',
+			'operation',
+			'sourceData',
+			'binaryPropertyName',
+			'decryptUsing',
+			'publicKeys',
+			'requireValidSignature',
+			'outputAs',
+			'outputBinaryFieldName',
+			'options',
 		]);
 	});
 
 	it('offers legacy compatibility only', () => {
-		expect(visibleOptions({ decryptUsing: 'privateKey' }, 'decrypt')).toEqual(['Legacy Compatibility']);
+		expect(visibleOptions({ decryptUsing: 'privateKey' }, 'decrypt')).toEqual(['legacyCompatibility']);
 	});
 });

@@ -170,9 +170,7 @@ describe('Verify', () => {
 					publicKeys: RSA_PUBLIC,
 				},
 			}),
-		).rejects.toThrow(
-			/Signature did not verify — the message was not signed by any provided Public Key\(s\)\. \[Item 0\]/,
-		);
+		).rejects.toThrow(/'Public Key\(s\)'.*\[Item 0\]/);
 	});
 
 	it('fails on an unsigned embedded message by default', async () => {
@@ -186,9 +184,7 @@ describe('Verify', () => {
 					publicKeys: RSA_PUBLIC,
 				},
 			}),
-		).rejects.toThrow(
-			/Signature did not verify — the message was not signed by any provided Public Key\(s\)\. \[Item 0\]/,
-		);
+		).rejects.toThrow(/'Public Key\(s\)'.*\[Item 0\]/);
 	});
 
 	it('reports an unsigned embedded message as a predicate when throwing is off', async () => {

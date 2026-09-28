@@ -1,0 +1,101 @@
+{
+  "name": "OpenPGP example: detached sign and verify",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create and test an **OpenPGP Private Key API** credential.\n2. Attach it to **Create Detached Signature**.\n3. Paste the matching armored public key into **Verify Detached Signature**.\n\nThe Merge node reunites the original message with the detached signature before verification."
+      },
+      "id": "setup-note",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, -300]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { message: 'Verify this exact message' } }];"
+      },
+      "id": "sample-message",
+      "name": "Create Sample Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "operation": "sign",
+        "signatureType": "detached",
+        "sourceData": "text",
+        "textToSign": "={{ $json.message }}",
+        "outputAs": "text",
+        "outputFieldName": "signature",
+        "options": {}
+      },
+      "id": "sign",
+      "name": "Create Detached Signature",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [440, -80]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 2,
+        "options": {}
+      },
+      "id": "merge",
+      "name": "Merge Message and Signature",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "operation": "verify",
+        "signatureType": "detached",
+        "messageSource": "text",
+        "messageText": "={{ $json.message }}",
+        "signatureSource": "text",
+        "signatureText": "={{ $json.signature }}",
+        "publicKeys": "REPLACE_WITH_ARMORED_PUBLIC_KEY",
+        "throwOnInvalidSignature": true,
+        "options": {}
+      },
+      "id": "verify",
+      "name": "Verify Detached Signature",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [880, 0]
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [[{"node": "Create Sample Message", "type": "main", "index": 0}]]
+    },
+    "Create Sample Message": {
+      "main": [[
+        {"node": "Create Detached Signature", "type": "main", "index": 0},
+        {"node": "Merge Message and Signature", "type": "main", "index": 1}
+      ]]
+    },
+    "Create Detached Signature": {
+      "main": [[{"node": "Merge Message and Signature", "type": "main", "index": 0}]]
+    },
+    "Merge Message and Signature": {
+      "main": [[{"node": "Verify Detached Signature", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

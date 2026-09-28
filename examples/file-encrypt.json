@@ -1,0 +1,79 @@
+{
+  "name": "OpenPGP example: encrypt a file",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Mount or place a readable file at `/files/input.txt`, or change the Read File path.\n2. Paste one or more armored recipient public keys into **Encrypt File**.\n3. Change the Write File path if needed.\n\nThe OpenPGP node uses the binary field `data` for both input and output, so no field mapping is required."
+      },
+      "id": "setup-note",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, -260]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/files/input.txt",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "read-file",
+      "name": "Read File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "operation": "encrypt",
+        "sourceData": "binary",
+        "encryptUsing": "publicKeys",
+        "publicKeys": "REPLACE_WITH_ARMORED_PUBLIC_KEY",
+        "outputAs": "binary",
+        "options": {}
+      },
+      "id": "encrypt-file",
+      "name": "Encrypt File",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/files/input.txt.asc",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "write-file",
+      "name": "Write File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [[{"node": "Read File", "type": "main", "index": 0}]]
+    },
+    "Read File": {
+      "main": [[{"node": "Encrypt File", "type": "main", "index": 0}]]
+    },
+    "Encrypt File": {
+      "main": [[{"node": "Write File", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

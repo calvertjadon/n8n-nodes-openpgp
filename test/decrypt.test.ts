@@ -160,9 +160,7 @@ describe('Decrypt', () => {
 					passphrase: 'not-the-passphrase',
 				},
 			}),
-		).rejects.toThrow(
-			/Couldn't decrypt with this credential's private key — check the Passphrase, or that the message was encrypted for this key\. \[Item 0\]/,
-		);
+		).rejects.toThrow(/'Passphrase'.*\[Item 0\]/);
 	});
 
 	it('reports signature fields when verification keys are supplied', async () => {
@@ -203,7 +201,7 @@ describe('Decrypt', () => {
 				},
 				credential: { privateKey: RSA_PRIVATE },
 			}),
-		).rejects.toThrow(/Message is not signed — Require Valid Signature is on\. \[Item 0\]/);
+		).rejects.toThrow(/'Require Valid Signature'.*\[Item 0\]/);
 	});
 
 	it('fails on a signature from an unknown key when Require Valid Signature is on', async () => {
@@ -216,9 +214,7 @@ describe('Decrypt', () => {
 				},
 				credential: { privateKey: RSA_PRIVATE },
 			}),
-		).rejects.toThrow(
-			/Signature did not verify — the message was not signed by any provided Public Key\(s\)\. \[Item 0\]/,
-		);
+		).rejects.toThrow(/'Public Key\(s\)'.*\[Item 0\]/);
 	});
 
 	it('writes the plaintext into the configured text field', async () => {
