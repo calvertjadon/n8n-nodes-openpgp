@@ -5,7 +5,8 @@
 		":semanticPrefixFixDepsChoreOthers",
 		":enableVulnerabilityAlerts",
 		"security:minimumReleaseAgeNpm",
-		":automergeAll"
+		":automergeAll",
+		"helpers:pinGitHubActionDigests"
 	],
 	"rangeStrategy": "pin",
 	"platformAutomerge": true,
@@ -30,6 +31,9 @@
 			"matchDepTypes": [
 				"peerDependencies"
 			],
+			"matchPackageNames": [
+				"n8n-workflow"
+			],
 			"enabled": false
 		},
 		{
@@ -47,9 +51,12 @@
 			"semanticCommitType": "fix"
 		},
 		{
-			"description": "Group non-major devDependency bumps into one pull request",
+			"description": "Group non-major devDependency bumps except openpgp, which must update both declarations together",
 			"matchDepTypes": [
 				"devDependencies"
+			],
+			"matchPackageNames": [
+				"!openpgp"
 			],
 			"matchUpdateTypes": [
 				"minor",
@@ -98,6 +105,13 @@
 				"major"
 			],
 			"enabled": false
+		},
+		{
+			"description": "Repository policy overrides hosted package rules that require Dependency Dashboard approval",
+			"matchPackageNames": [
+				"/.*/"
+			],
+			"dependencyDashboardApproval": false
 		}
 	],
 	"vulnerabilityAlerts": {
@@ -118,6 +132,5 @@
 				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nN8N_IMAGE=\\$\\{N8N_IMAGE:-[^:]+:(?<currentValue>[^}]+)\\}"
 			]
 		}
-	],
-	"dependencyDashboardApproval": false
+	]
 }
