@@ -108,8 +108,10 @@ jobs:
           if ! npm publish; then
             echo "npm publish failed — continuing only if the version is already there"
           fi
+          # Trusted publishing can finish before npm exposes the version through
+          # registry reads. Give npm up to 15 minutes to finish processing it.
           published=''
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 150); do
             published=$(npm view "n8n-nodes-openpgp@${version}" version 2>/dev/null || true)
             [ "$published" = "$version" ] && break
             sleep 6
