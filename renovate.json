@@ -5,7 +5,8 @@
 		":semanticPrefixFixDepsChoreOthers",
 		":enableVulnerabilityAlerts",
 		"security:minimumReleaseAgeNpm",
-		":automergeAll"
+		":automergeAll",
+		"helpers:pinGitHubActionDigests"
 	],
 	"rangeStrategy": "pin",
 	"platformAutomerge": true,
@@ -29,6 +30,9 @@
 			],
 			"matchDepTypes": [
 				"peerDependencies"
+			],
+			"matchPackageNames": [
+				"n8n-workflow"
 			],
 			"enabled": false
 		},
@@ -98,6 +102,13 @@
 				"major"
 			],
 			"enabled": false
+		},
+		{
+			"description": "Repository policy overrides hosted package rules that require Dependency Dashboard approval",
+			"matchPackageNames": [
+				"/.*/"
+			],
+			"dependencyDashboardApproval": false
 		}
 	],
 	"vulnerabilityAlerts": {
@@ -118,6 +129,5 @@
 				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nN8N_IMAGE=\\$\\{N8N_IMAGE:-[^:]+:(?<currentValue>[^}]+)\\}"
 			]
 		}
-	],
-	"dependencyDashboardApproval": false
+	]
 }
