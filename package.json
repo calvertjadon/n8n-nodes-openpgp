@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-openpgp",
 	"version": "0.2.6",
-	"description": "Encrypt, decrypt, sign, and verify data with OpenPGP \u2014 key-based or password-based.",
+	"description": "Encrypt, decrypt, sign, and verify data with OpenPGP — key-based or password-based.",
 	"license": "MIT",
 	"homepage": "https://github.com/calvertjadon/n8n-nodes-openpgp#readme",
 	"keywords": [
@@ -66,6 +66,8 @@
 		"@openpgp/web-stream-tools": "0.3.1",
 		"@release-it/conventional-changelog": "12.0.2",
 		"@types/node": "24.13.6",
+		"conventional-commits-parser": "7.1.2",
+		"conventional-recommended-bump": "12.1.0",
 		"eslint": "9.39.5",
 		"n8n-workflow": "2.16.0",
 		"openpgp": "6.3.2",
