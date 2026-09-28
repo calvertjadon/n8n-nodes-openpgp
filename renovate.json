@@ -19,126 +19,86 @@
 		"**/tests/**",
 		"**/__fixtures__/**"
 	],
-	"labels": [
-		"dependencies"
-	],
+	"labels": ["dependencies"],
 	"packageRules": [
 		{
 			"description": "The scanner only allows n8n-workflow as a peer, and only as \"*\"",
-			"matchManagers": [
-				"npm"
-			],
-			"matchDepTypes": [
-				"peerDependencies"
-			],
-			"matchPackageNames": [
-				"n8n-workflow"
-			],
+			"matchManagers": ["npm"],
+			"matchDepTypes": ["peerDependencies"],
+			"matchPackageNames": ["n8n-workflow"],
 			"enabled": false
 		},
 		{
+			"description": "Use n8n's stable line for development; npm's latest tag trails the supported release",
+			"matchManagers": ["npm"],
+			"matchDepTypes": ["devDependencies"],
+			"matchPackageNames": ["n8n-workflow"],
+			"followTag": "stable"
+		},
+		{
 			"description": "engines.node is a deliberate floor and the CI node-version entries are matrix lines",
-			"matchDepNames": [
-				"node"
-			],
+			"matchDepNames": ["node"],
 			"enabled": false
 		},
 		{
 			"description": "Keep dependency bumps as patch releases, so a green openpgp major never jumps our minor version",
-			"matchPackageNames": [
-				"openpgp"
-			],
+			"matchPackageNames": ["openpgp"],
 			"semanticCommitType": "fix"
 		},
 		{
 			"description": "Group non-major devDependency bumps except openpgp, which must update both declarations together",
-			"matchDepTypes": [
-				"devDependencies"
-			],
-			"matchPackageNames": [
-				"!openpgp"
-			],
-			"matchUpdateTypes": [
-				"minor",
-				"patch"
-			],
+			"matchDepTypes": ["devDependencies"],
+			"matchPackageNames": ["!openpgp"],
+			"matchUpdateTypes": ["minor", "patch"],
 			"groupName": "devDependencies (non-major)"
 		},
 		{
 			"description": "openpgp majors are hands-off too, but they must be visible in the label set",
-			"matchPackageNames": [
-				"openpgp"
-			],
-			"matchUpdateTypes": [
-				"major"
-			],
-			"addLabels": [
-				"openpgp-major"
-			]
+			"matchPackageNames": ["openpgp"],
+			"matchUpdateTypes": ["major"],
+			"addLabels": ["openpgp-major"]
 		},
 		{
 			"description": "Docker and GitHub Actions bumps never cut a release",
-			"matchManagers": [
-				"dockerfile",
-				"custom.regex",
-				"github-actions"
-			],
+			"matchManagers": ["dockerfile", "custom.regex", "github-actions"],
 			"commitMessageAction": "update",
 			"commitMessagePrefix": "ci(deps):",
 			"semanticCommitType": "ci"
 		},
 		{
 			"description": "GitHub Action pin commits use a lowercase subject accepted by commitlint",
-			"matchManagers": [
-				"github-actions"
-			],
-			"matchUpdateTypes": [
-				"pin"
-			],
+			"matchManagers": ["github-actions"],
+			"matchUpdateTypes": ["pin"],
 			"commitMessageAction": "pin"
 		},
 		{
 			"description": "eslint 10 crashes the n8n lint stack: @n8n/eslint-plugin-community-nodes pins eslint 9.29.0 exactly",
-			"matchPackageNames": [
-				"eslint"
-			],
-			"matchUpdateTypes": [
-				"major"
-			],
+			"matchPackageNames": ["eslint"],
+			"matchUpdateTypes": ["major"],
 			"enabled": false
 		},
 		{
 			"description": "typescript 7 removes moduleResolution=node10 and has no lib/typescript.js for ts-morph",
-			"matchPackageNames": [
-				"typescript"
-			],
-			"matchUpdateTypes": [
-				"major"
-			],
+			"matchPackageNames": ["typescript"],
+			"matchUpdateTypes": ["major"],
 			"enabled": false
 		},
 		{
 			"description": "Repository policy overrides hosted package rules that require Dependency Dashboard approval",
-			"matchPackageNames": [
-				"/.*/"
-			],
+			"matchPackageNames": ["/.*/"],
 			"dependencyDashboardApproval": false
 		}
 	],
 	"vulnerabilityAlerts": {
 		"description": "The default (update-lockfile) would fix only the lockfile",
 		"rangeStrategy": "pin",
-		"labels": [
-			"security"
-		]
+		"labels": ["security"]
 	},
 	"customManagers": [
 		{
 			"customType": "regex",
 			"description": "Pin the n8n image the smoke lane runs against",
-			"managerFilePatterns": [
-				"/^test/smoke/run\\.sh$/"
-			],
+			"managerFilePatterns": ["/^test/smoke/run\\.sh$/"],
 			"matchStrings": [
 				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nN8N_IMAGE=\\$\\{N8N_IMAGE:-[^:]+:(?<currentValue>[^}]+)\\}"
 			]

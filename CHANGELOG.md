@@ -5,6 +5,7 @@
 ### Bug Fixes
 
 * make `chore(deps)` commits produce patch releases and tolerate npm's publish-processing delay
+* follow the supported `n8n-workflow` stable line and remove high-severity development advisories
 
 ## [0.2.2](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.1...0.2.2) (2026-09-22)
 
