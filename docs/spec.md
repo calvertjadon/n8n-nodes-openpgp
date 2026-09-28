@@ -199,12 +199,11 @@ Output is JSON-only: `{ verified, signed, keyID, data? }` — `data` carries the
 ## 7. CI/CD & automation ([#7](https://github.com/calvertjadon/n8n-nodes-openpgp/issues/7))
 
 ### 7.1 Release pipeline
-- **Single workflow** `.github/workflows/release.yml`, `on: push: branches: [main]` (the scaffold's tag-triggered `publish.yml` is deleted). One atomic run: full CI gate → if releasable commits exist → release-it `--ci` bumps, commits, tags, pushes, creates the GitHub Release, and OIDC-publishes.
+- **Single workflow** `.github/workflows/release.yml`, `on: push: branches: [main]` (the scaffold's tag-triggered `publish.yml` is deleted). One atomic run: full CI gate → if releasable commits exist → release-it calculates the bump and notes locally → explicit OIDC publish → tag the triggering `main` commit → create the GitHub Release.
 - Cadence: auto-on-merge; a merge with nothing releasable publishes nothing.
 - Why single: `GITHUB_TOKEN`-pushed tags do not trigger other workflows → any two-workflow shape needs a PAT/App token, which the hands-off preference rejects. Partial-failure repair: `release-it --no-increment`.
 - Mechanics: `permissions: { contents: write, id-token: write }`; `env: RELEASE_MODE=true` (the scaffold's `prepublishOnly: n8n-node prerelease` gate rejects publishes without it); `npm install -g npm@latest` (trusted-publishing floor npm ≥ 11.5.1 / Node ≥ 22.14.0); call **release-it directly** (`n8n-node release`'s CI branch publishes only — it cannot bump).
-- Provenance is automatic (OIDC + public repo); `publishConfig.provenance: true` as belt-and-braces.
-- Post-publish tripwire: `npx @n8n/scan-community-package n8n-nodes-openpgp@<version>` — detects a bad publish within minutes (it cannot prevent one: the scanner only reads published artifacts).
+- Provenance is automatic (OIDC + public repo); `publishConfig.provenance: true` as belt-and-braces. The workflow then waits until npm registry reads expose the version before tagging it.
 - **Workflow filename is immutable** in the npm trusted-publisher binding → `release.yml` it is.
 
 ### 7.2 Dependency management
@@ -423,10 +422,10 @@ does not rediscover them:
   re-scan of published packages exists — which is why unverified packages with runtime
   dependencies are the ecosystem's normal state, and why this one keeps `dependencies`.
 - **Release mechanics on a protected default branch**: required status checks cannot be pushed past by a workflow
-  token on a personally-owned repository (GitHub refuses the Actions app as a ruleset bypass actor there), so the
-  release publishes and tags, then lands its version bump and changelog through a pull request that auto-merges —
-  and the bump PR's checks do run, because the pull-request event starts CI. The next version is derived after
-  syncing `package.json` to the last tag, so a bump still in flight cannot make a run recompute a published version.
+  token on a personally-owned repository (GitHub refuses the Actions app as a ruleset bypass actor there). The
+  release therefore publishes and tags the triggering `main` commit without landing release-it's local commit.
+  Git tags and GitHub Releases are the published metadata source; the branch uses explicit development-only
+  markers instead of stale version and changelog snapshots.
 - **Publishing is an explicit, idempotent step**: release-it hides the publish command's output, which made a
   duplicate-publish failure undiagnosable, so the workflow runs `npm publish` itself, tolerates "cannot publish
   over the previously published versions" (a re-run of a release whose publish already landed), and then requires
@@ -447,14 +446,14 @@ does not rediscover them:
   parked at `action_required`, needing a human to approve it to run, even with "Allow GitHub Actions to create and
   approve pull requests" enabled; and an explicitly dispatched run on the release branch passes every job but does not
   satisfy the pull request's required checks. The release therefore publishes and tags only, and every release derives
-  its next version from the last tag — `package.json` and `CHANGELOG.md` on `main` lag until a human syncs them, while
-  the changelog itself is in the GitHub Release. Verified end to end: `0.2.2` published with provenance and tagged
-  from a `fix:` push with no human in the loop.
+  its next version from the last tag. `package.json` uses `0.0.0-development` on `main`, and `CHANGELOG.md` links to
+  GitHub Releases rather than pretending to be a current local ledger. Verified end to end: `0.2.2` published with
+  provenance and was tagged from a `fix:` push with no human in the loop.
 - **A release tag must be anchored to the trunk commit.** release-it tags its own bump commit, which never reaches
   `main` under the tag-only design, so `git describe` cannot see it and the *next* release re-derives a version that
   already exists ("tag '0.2.2' already exists"). The workflow now creates the tag at the commit it ran on and force
-  pushes it, so every release leaves a reachable tag and the version chain stays monotonic. `package.json` and
-  `CHANGELOG.md` on `main` still lag (a human can sync them per release; the changelog is in the GitHub Release).
+  pushes it, so every release leaves a reachable tag and the version chain stays monotonic. The development-only
+  metadata on `main` makes that tag-based ownership explicit.
 - **Malformed key armor is diagnosed, not delegated**: OpenPGP.js answers "Misformed armored text" for every
   formatting problem, which names no part of the input and is therefore unactionable — a user report of exactly that
   message cost four releases to resolve. The node and the credential test now inspect the block themselves and report

@@ -78,7 +78,10 @@ export class OpenPgp implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'OpenPGP',
 		name: 'openPgp',
-		icon: 'file:openPgp.svg',
+		icon: {
+			light: 'file:openPgp.svg',
+			dark: 'file:openPgp.svg',
+		},
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{ $parameter["operation"] }}',
