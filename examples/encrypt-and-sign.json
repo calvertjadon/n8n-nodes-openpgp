@@ -1,0 +1,63 @@
+{
+  "name": "OpenPGP example: encrypt and sign",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create and test an **OpenPGP Private Key API** credential.\n2. Attach it to **Encrypt and Sign**.\n3. Paste one or more armored recipient public keys into that node.\n\nThe result is encrypted for every recipient and signed by the attached private key."
+      },
+      "id": "setup-note",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, -260]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { message: 'Encrypted and signed with OpenPGP' } }];"
+      },
+      "id": "sample-message",
+      "name": "Create Sample Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "operation": "encrypt",
+        "sourceData": "text",
+        "textToEncrypt": "={{ $json.message }}",
+        "encryptUsing": "publicKeys",
+        "publicKeys": "REPLACE_WITH_ARMORED_PUBLIC_KEY",
+        "alsoSign": true,
+        "outputAs": "text",
+        "outputFieldName": "encryptedMessage",
+        "options": {}
+      },
+      "id": "encrypt-and-sign",
+      "name": "Encrypt and Sign",
+      "type": "n8n-nodes-openpgp.openPgp",
+      "typeVersion": 1,
+      "position": [440, 0]
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [[{"node": "Create Sample Message", "type": "main", "index": 0}]]
+    },
+    "Create Sample Message": {
+      "main": [[{"node": "Encrypt and Sign", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

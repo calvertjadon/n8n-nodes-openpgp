@@ -49,50 +49,50 @@ const COMPRESSION_ALGORITHMS: Record<CompressionOption, openpgp.enums.compressio
  */
 export const ERROR_COPY = {
 	missingCredential: {
-		message: 'This operation needs an OpenPGP Private Key credential — attach one to the node.',
+		message: 'This operation needs an OpenPGP Private Key API credential attached to the node.',
 		description:
-			'Create an "OpenPGP Private Key API" credential holding the armored private key and, if the key is protected, its passphrase, then select it on this node.',
+			"Create an 'OpenPGP Private Key API' credential holding the armored private key and, if the key is protected, its Passphrase, then select it on this node.",
 	},
 	unreadableKey: {
 		message:
-			"Public Key(s) doesn't contain a readable OpenPGP key — paste the full armored block, including BEGIN/END lines.",
+			"'Public Key(s)' doesn't contain a readable OpenPGP key. Paste the full armored block, including BEGIN and END lines.",
 		description:
-			'Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first, for example with gpg --armor --export.',
+			"Copy the key from its BEGIN line through its END line. Binary key files must be exported as armored text first, for example with 'gpg --armor --export'.",
 	},
 	unreadablePrivateKey: {
 		message:
-			"Private Key doesn't contain a readable OpenPGP key — paste the full armored block, including BEGIN/END lines.",
+			"'Private Key' doesn't contain a readable OpenPGP key. Paste the full armored block, including BEGIN and END lines.",
 		description:
-			'Fix the Private Key field in the credential: copy the key from its BEGIN line through its END line.',
+			"Fix the 'Private Key' field in the credential by copying the key from its BEGIN line through its END line.",
 	},
 	privateKeyIsPublic: {
 		message:
-			"Private Key holds a public key — it can't decrypt or sign. Paste the armored private key block instead.",
+			"'Private Key' holds a public key, so it can't decrypt or sign. Paste the armored private key block instead.",
 		description:
-			'Export the private key with gpg --armor --export-secret-keys <key ID>, including the BEGIN and END lines.',
+			"Export the private key with 'gpg --armor --export-secret-keys <key ID>', including the BEGIN and END lines.",
 	},
 	decryptionFailed: {
 		message:
-			"Couldn't decrypt with this credential's private key — check the Passphrase, or that the message was encrypted for this key.",
+			"Couldn't decrypt with this credential's private key. Check the 'Passphrase', or confirm that the message was encrypted for this key.",
 		description:
-			'Re-enter the Passphrase in the credential, and confirm the message was encrypted for the key this credential holds.',
+			"Re-enter the 'Passphrase' in the credential, and confirm the message was encrypted for the key this credential holds.",
 	},
 	passwordDecryptionFailed: {
 		message:
-			"Couldn't decrypt with this Password — check that it is the one the message was encrypted with.",
-		description: 'Check the Password against the one the sender used to encrypt the message.',
+			"Couldn't decrypt with this 'Password'. Check that it is the one the message was encrypted with.",
+		description: "Check the 'Password' against the one the sender used to encrypt the message.",
 	},
 	unsignedMessage: {
-		message: 'Message is not signed — Require Valid Signature is on.',
-		description: 'Turn Require Valid Signature off to let unsigned data pass through.',
+		message: "Message is not signed while 'Require Valid Signature' is on.",
+		description: "Turn 'Require Valid Signature' off to let unsigned data pass through.",
 	},
 	invalidSignature: {
-		message: 'Signature did not verify — the message was not signed by any provided Public Key(s).',
+		message: "Signature did not verify against any provided 'Public Key(s)'.",
 		description:
-			"Add the signer's public key to Public Key(s), or turn the throw option off to branch on the signature result instead.",
+			"Add the signer's public key to 'Public Key(s)', or turn the throw option off to branch on the signature result instead.",
 	},
 	notUtf8Text: {
-		message: 'Plaintext is not valid UTF-8 text — set Output As to Binary instead.',
+		message: "Plaintext is not valid UTF-8 text. Set 'Output As' to Binary instead.",
 		description: 'Binary output keeps the decrypted bytes exactly as they are.',
 	},
 } as const;
