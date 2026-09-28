@@ -51,9 +51,12 @@
 			"semanticCommitType": "fix"
 		},
 		{
-			"description": "Group non-major devDependency bumps into one pull request",
+			"description": "Group non-major devDependency bumps except openpgp, which must update both declarations together",
 			"matchDepTypes": [
 				"devDependencies"
+			],
+			"matchPackageNames": [
+				"!openpgp"
 			],
 			"matchUpdateTypes": [
 				"minor",
