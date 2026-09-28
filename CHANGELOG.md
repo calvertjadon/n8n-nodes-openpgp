@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+* make `chore(deps)` commits produce the configured patch release
+
 ## [0.2.2](https://github.com/calvertjadon/n8n-nodes-openpgp/compare/0.2.1...0.2.2) (2026-09-22)
 
 ### Bug Fixes
