@@ -83,8 +83,19 @@
 				"custom.regex",
 				"github-actions"
 			],
+			"commitMessageAction": "update",
 			"commitMessagePrefix": "ci(deps):",
 			"semanticCommitType": "ci"
+		},
+		{
+			"description": "GitHub Action pin commits use a lowercase subject accepted by commitlint",
+			"matchManagers": [
+				"github-actions"
+			],
+			"matchUpdateTypes": [
+				"pin"
+			],
+			"commitMessageAction": "pin"
 		},
 		{
 			"description": "eslint 10 crashes the n8n lint stack: @n8n/eslint-plugin-community-nodes pins eslint 9.29.0 exactly",
