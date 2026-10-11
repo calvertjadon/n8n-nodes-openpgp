@@ -13,7 +13,7 @@ set -euo pipefail
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 # renovate: datasource=docker depName=n8nio/n8n
-N8N_IMAGE=${N8N_IMAGE:-n8nio/n8n:2.41.3}
+N8N_IMAGE=${N8N_IMAGE:-n8nio/n8n:2.43.3}
 
 CONTAINER="openpgp-smoke-$$"
 MOUNT=/work
