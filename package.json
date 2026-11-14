@@ -71,7 +71,7 @@
 		"eslint": "9.39.5",
 		"n8n-workflow": "2.46.5",
 		"openpgp": "6.3.2",
-		"prettier": "3.9.10",
+		"prettier": "3.10.0",
 		"release-it": "21.1.2",
 		"typescript": "5.9.3",
 		"vitest": "5.1.0"
